@@ -4,424 +4,255 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Player vs Computer</title>
+
+  <!-- Telegram Mini App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- GigaPub Ads -->
   <script src="https://ad.gigapub.tech/script?id=1794"></script>
-  <script src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"></script>
+
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to bottom, #3b0a84, #1c005e);
-      color: #fff;
-      text-align: center;
-    }
-    #reward-ui {
-      display: none;
-      background: #f9f9f9;
-      color: #000;
-      height: 100vh;
-      padding-top: 40px;
-    }
-    #timer {
-      font-size: 22px;
-      font-weight: bold;
-    }
-    #ad-container {
-      margin: 20px auto;
-      width: 320px;
-      height: 180px;
-      background: #ddd url('https://via.placeholder.com/320x180?text=Your+Ad+Banner') center/cover;
-      border-radius: 12px;
-      position: relative;
-    }
-    #click-ad {
-      position: absolute;
-      inset: 0;
-      cursor: pointer;
-    }
-    #reward-text {
-      font-size: 16px;
-      margin-top: 10px;
-    }
-    #continue-btn {
-      margin-top: 20px;
-      padding: 12px 24px;
-      font-size: 18px;
-      background: #0066cc;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      display: none;
-      cursor: pointer;
-    }
-    #main-game { display: block; }
-    h2 { margin-top: 20px; font-size: 24px; font-weight: 600; }
-    #status, #level, #points {
-      margin-top: 10px; font-size: 18px; font-weight: 500;
-    }
-    #notification {
-      margin-top: 12px;
-      font-size: 14px;
-      color: #ffcc00;
-      font-weight: 600;
-    }
-    #game {
-      display: grid;
-      grid-template-columns: repeat(3, 90px);
-      grid-gap: 16px;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
-      margin: 30px auto;
+      height: 100vh;
+      margin: 0;
+      background: #f3f3f3;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
     }
     .cell {
-      width: 90px; height: 90px; font-size: 2.5em;
-      border-radius: 24px;
-      background: linear-gradient(145deg, #5022aa, #2f0e63);
-      box-shadow: inset -4px -4px 12px rgba(255,255,255,0.08), inset 4px 4px 12px rgba(0,0,0,0.25), 0 0 6px rgba(255,255,255,0.06);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: transform 0.2s;
-    }
-    .cell:hover { transform: scale(1.05); }
-    .cell.X { color: #00ffcc; text-shadow: 0 0 8px #00ffcc, 0 0 12px #00ffcc; }
-    .cell.O { color: #ff4d6d; text-shadow: 0 0 8px #ff4d6d, 0 0 12px #ff4d6d; }
-    #restart, #next, #reward-btn {
-      margin-top: 30px; padding: 12px 28px;
-      font-size: 18px;
-      background: linear-gradient(to right, #ff416c, #ff4b2b);
-      border: none; color: white;
-      border-radius: 30px;
-      box-shadow: 0 0 18px rgba(255, 65, 108, 0.8);
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      background: #fff;
       cursor: pointer;
-      display: inline-block;
-      margin-left: 8px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    #next { display: none; }
-    #result-overlay {
-      position: fixed; top: 40%; left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 2em;
-      background: rgba(0, 0, 0, 0.75);
-      padding: 20px 40px;
-      border-radius: 16px;
-      display: none;
-      z-index: 1000;
+    .cell.taken {
+      pointer-events: none;
     }
-    #result-overlay.show { display: block; }
-    .flash { animation: flash 0.5s alternate 4; }
-    @keyframes flash {
-      from { background-color: rgba(255, 255, 255, 0.12); }
-      to { background-color: rgba(255, 255, 255, 0.05); }
+    #notification {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    #nextBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #2196f3;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    #nextBtn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
-
-  <!-- Reward UI (kept as-is) -->
-  <div id="reward-ui">
-    <div id="timer">00:15</div>
-    <div id="ad-container">
-      <div id="click-ad"></div>
-    </div>
-    <div id="reward-text">Click to get the reward!</div>
-    <button id="continue-btn">Continue</button>
-  </div>
-
-  <!-- Main Game UI -->
-  <div id="main-game">
-    <h2>Player vs Computer</h2>
-    <div id="status">Your turn (X)</div>
-    <div id="level">Level: 1 (Easy)</div>
-    <div id="points">XP: 0</div>
-    <div id="notification"></div>
-    <div id="game"></div>
-    <button id="restart">Restart</button>
-    <button id="next">Next</button>
-    <button id="reward-btn">Reward</button>
-    <div id="result-overlay"></div>
-    <audio id="gameover-sound" src="https://www.soundjay.com/button/sounds/button-29.mp3" preload="auto"></audio>
-  </div>
+  <h1>Player vs Computer</h1>
+  <div class="board" id="board"></div>
+  <div id="notification"></div>
+  <button id="nextBtn" disabled>Next</button>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-
-    const game = document.getElementById("game");
-    const statusText = document.getElementById("status");
-    const restartBtn = document.getElementById("restart");
-    const nextBtn = document.getElementById("next");
-    const rewardBtn = document.getElementById("reward-btn");
-    const levelText = document.getElementById("level");
-    const pointsText = document.getElementById("points");
+    const boardEl = document.getElementById("board");
     const notification = document.getElementById("notification");
-    const resultOverlay = document.getElementById("result-overlay");
-    const gameoverSound = document.getElementById("gameover-sound");
+    const nextBtn = document.getElementById("nextBtn");
 
-    let board = Array(9).fill("");
-    let gameActive = true;
+    let board, currentPlayer, gameOver;
     let xp = 0;
+    let adWatchCount = 0;
     let notificationShown = false;
-    let playerTurn = true;           // prevent multiple touches
-    let adWatchCount = 0;            // total ads watched
-    let timerInterval = null;        // for the 30s confirmation timer
 
-    const winningCombinations = [
-      [0,1,2],[3,4,5],[6,7,8],
-      [0,3,6],[1,4,7],[2,5,8],
-      [0,4,8],[2,4,6]
-    ];
-
-    function getLevelName(levelNum) {
-      const names = ["Easy", "Medium", "Hard", "Hardest"];
-      return names[(levelNum - 1) % names.length];
-    }
-
-    function getLevel() {
-      return Math.min(xp + 1, 150);
-    }
-
-    function createBoard() {
-      game.innerHTML = "";
+    function initBoard() {
+      board = ["", "", "", "", "", "", "", "", ""];
+      currentPlayer = "X";
+      gameOver = false;
+      boardEl.innerHTML = "";
       for (let i = 0; i < 9; i++) {
         const cell = document.createElement("div");
         cell.classList.add("cell");
         cell.dataset.index = i;
-        cell.addEventListener("click", () => playerMove(i));
-        game.appendChild(cell);
+        cell.addEventListener("click", handleCellClick);
+        boardEl.appendChild(cell);
       }
+      nextBtn.disabled = true;
     }
 
-    function updateBoard() {
-      document.querySelectorAll(".cell").forEach((cell, i) => {
-        cell.textContent = board[i];
-        cell.classList.remove("X", "O", "flash");
-        if (board[i]) cell.classList.add(board[i]);
-      });
-      const level = getLevel();
-      levelText.textContent = `Level: ${level} (${getLevelName(level)})`;
-      pointsText.textContent = `XP: ${xp}`;
-    }
-
-    function getEmptyIndices() {
-      return board.map((v, i) => v === "" ? i : -1).filter(i => i !== -1);
-    }
-
-    function checkWin(player) {
-      return winningCombinations.find(combo => combo.every(i => board[i] === player));
-    }
-
-    function isDraw() {
-      return board.every(cell => cell !== "");
-    }
-
-    function flashCells(combo) {
-      combo.forEach(i => document.querySelector(`.cell[data-index='${i}']`).classList.add("flash"));
-    }
-
-    function showResult(text) {
-      resultOverlay.textContent = text;
-      resultOverlay.classList.add("show");
-      setTimeout(() => resultOverlay.classList.remove("show"), 2000);
-    }
-
-    function playSound() {
-      gameoverSound.currentTime = 0;
-      gameoverSound.play();
-    }
-
-    // AI: Hardest = win first, then block; Hard = try win; Medium/Easy = random
-    function computerMove() {
-      if (!gameActive) return;
-      const empty = getEmptyIndices();
-      if (empty.length === 0) return;
-
-      const levelName = getLevelName(getLevel());
-      let move = null;
-
-      if (levelName === "Hardest") {
-        // 1) try to win
-        move = findBestMove("O");
-        // 2) block player
-        if (move === null) move = findBestMove("X");
-        // 3) random
-        if (move === null) move = empty[Math.floor(Math.random() * empty.length)];
-      } else if (levelName === "Hard") {
-        move = findBestMove("O");
-        if (move === null) move = empty[Math.floor(Math.random() * empty.length)];
-      } else {
-        move = empty[Math.floor(Math.random() * empty.length)];
-      }
-
-      board[move] = "O";
-      updateBoard();
-
-      const win = checkWin("O");
-      if (win) {
-        flashCells(win);
-        gameActive = false;
-        playSound();
-        showResult("You Lose!");
-        showSkipNotificationOnce();
-        restartBtn.style.display = 'inline-block';
-        nextBtn.style.display = 'none';
-        return;
-      } else if (isDraw()) {
-        gameActive = false;
-        showResult("Draw!");
-        showSkipNotificationOnce();
-        restartBtn.style.display = 'inline-block';
-        nextBtn.style.display = 'none';
-        return;
-      } else {
-        playerTurn = true;
-        statusText.textContent = "Your turn (X)";
-      }
-    }
-
-    // Find immediate winning/blocking move for a player
-    function findBestMove(player) {
-      for (let combo of winningCombinations) {
-        const values = combo.map(i => board[i]);
-        if (values.filter(v => v === player).length === 2 && values.includes("")) {
-          return combo[values.indexOf("")];
+    function handleCellClick(e) {
+      if (gameOver) return;
+      const idx = e.target.dataset.index;
+      if (board[idx] === "") {
+        board[idx] = currentPlayer;
+        e.target.textContent = currentPlayer;
+        e.target.classList.add("taken");
+        if (checkWinner(board, currentPlayer)) {
+          gameOver = true;
+          notification.textContent = "🎉 You Win!";
+          showNextBtn();
+        } else if (board.every(c => c !== "")) {
+          gameOver = true;
+          notification.textContent = "😐 Draw!";
+          showNextBtn();
+        } else {
+          currentPlayer = "O";
+          setTimeout(computerMove, 500);
         }
       }
-      return null;
     }
 
-    function playerMove(i) {
-      if (!gameActive || board[i] !== "" || !playerTurn) return;
-      board[i] = "X";
-      updateBoard();
-
-      const win = checkWin("X");
-      if (win) {
-        flashCells(win);
-        gameActive = false;
-        playSound();
-        showResult("You Win!");
-        xp = Math.min(xp + 1, 149);
-        updateBoard();
-        nextBtn.style.display = 'inline-block';
-        restartBtn.style.display = 'none';
-        notification.textContent = "";
-        notificationShown = false;
-        return;
-      }
-      if (isDraw()) {
-        gameActive = false;
-        showResult("Draw!");
-        showSkipNotificationOnce();
-        restartBtn.style.display = 'inline-block';
-        nextBtn.style.display = 'none';
-        return;
-      }
-
-      playerTurn = false; // lock until computer moves
-      statusText.textContent = "Computer's turn (O)";
-      setTimeout(computerMove, 500);
-    }
-
-    function resetGame() {
-      board = Array(9).fill("");
-      gameActive = true;
-      playerTurn = true;
-      statusText.textContent = "Your turn (X)";
-      updateBoard();
-      restartBtn.style.display = 'none';
-      nextBtn.style.display = 'none';
-      notification.textContent = "";
-      notificationShown = false;
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
+    function computerMove() {
+      if (gameOver) return;
+      const bestMove = getBestMove(board, "O");
+      board[bestMove] = "O";
+      const cell = boardEl.querySelector(`[data-index='${bestMove}']`);
+      cell.textContent = "O";
+      cell.classList.add("taken");
+      if (checkWinner(board, "O")) {
+        gameOver = true;
+        notification.textContent = "💻 Computer Wins!";
+        showNextBtn();
+      } else if (board.every(c => c !== "")) {
+        gameOver = true;
+        notification.textContent = "😐 Draw!";
+        showNextBtn();
+      } else {
+        currentPlayer = "X";
       }
     }
 
-    function showSkipNotificationOnce() {
-      if (!notificationShown) {
-        notification.textContent = "You can skip the level by clicking Reward Button";
-        notificationShown = true;
+    function checkWinner(b, p) {
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      return wins.some(comb => comb.every(i => b[i] === p));
+    }
+
+    function getBestMove(b, player) {
+      let bestScore = -Infinity;
+      let move;
+      for (let i = 0; i < 9; i++) {
+        if (b[i] === "") {
+          b[i] = player;
+          let score = minimax(b, 0, false);
+          b[i] = "";
+          if (score > bestScore) {
+            bestScore = score;
+            move = i;
+          }
+        }
+      }
+      return move;
+    }
+
+    function minimax(b, depth, isMaximizing) {
+      if (checkWinner(b, "O")) return 10 - depth;
+      if (checkWinner(b, "X")) return depth - 10;
+      if (b.every(c => c !== "")) return 0;
+
+      if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (b[i] === "") {
+            b[i] = "O";
+            let score = minimax(b, depth+1, false);
+            b[i] = "";
+            bestScore = Math.max(score, bestScore);
+          }
+        }
+        return bestScore;
+      } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (b[i] === "") {
+            b[i] = "X";
+            let score = minimax(b, depth+1, true);
+            b[i] = "";
+            bestScore = Math.min(score, bestScore);
+          }
+        }
+        return bestScore;
       }
     }
 
-    // --- Ad flow with special rule on every 9th ad ---
+    function showNextBtn() {
+      nextBtn.disabled = false;
+    }
+
+    nextBtn.addEventListener("click", () => {
+      showAdsAndContinue(true);
+    });
+
     async function showAdsAndContinue(incrementLevel = false) {
       try {
-        await window.showGiga(); // GigaPub ad
+        await window.showGiga(); // show GigaPub ad
         adWatchCount++;
 
         if (incrementLevel) {
-          // Every 9th ad requires a "click" + 30s timer before XP increase
           if (adWatchCount % 9 === 0) {
-            // Step 1: ask to click the ad
-            notification.innerHTML = `<span style="color:#ffcc00;font-weight:800;">Click the Ads</span>
-              <br>
-              <button id="confirmClick" style="margin-top:10px;padding:8px 14px;font-size:16px;background:#ff4b2b;border:none;border-radius:20px;color:#fff;box-shadow:0 0 12px rgba(255,75,43,0.8);cursor:pointer;">I Clicked the Ad</button>
-            `;
+            // Special rule: must click and wait 30s
+            notification.innerHTML = `<p style="color:red;font-weight:bold;">Click the Ads</p>
+              <button id="confirmClick" style="background:#ff9800;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">
+                I Clicked the Ad
+              </button>`;
 
-            // Step 2: on confirm, start 30s countdown
-            const btn = document.getElementById("confirmClick");
-            btn.onclick = () => {
+            document.getElementById("confirmClick").onclick = () => {
               let timeLeft = 30;
-              // disable button to avoid double starts
-              btn.disabled = true;
-              btn.style.opacity = "0.7";
-              notification.innerHTML = `⏳ Please wait <span id="confirm-timer">${timeLeft}</span> seconds...`;
-
-              if (timerInterval) clearInterval(timerInterval);
-              timerInterval = setInterval(() => {
+              notification.innerHTML = `<p>⏳ Please wait <span id="timer">${timeLeft}</span> seconds...</p>`;
+              
+              let timerInterval = setInterval(() => {
                 timeLeft--;
-                const t = document.getElementById("confirm-timer");
-                if (t) t.textContent = timeLeft;
+                document.getElementById("timer").textContent = timeLeft;
+
                 if (timeLeft <= 0) {
                   clearInterval(timerInterval);
-                  timerInterval = null;
-                  notification.innerHTML = `<span style="color:#00ff99;font-weight:800;">✅ Successful</span>`;
+                  notification.innerHTML = `<p style="color:green;font-weight:bold;">✅ Successful</p>`;
                   setTimeout(() => {
                     xp = Math.min(xp + 1, 149);
                     notification.textContent = "";
                     notificationShown = false;
-                    resetGame();
-                  }, 1200);
+                    initBoard();
+                  }, 1500);
                 }
               }, 1000);
             };
           } else {
-            // Normal ads (not the 9th): grant XP immediately
+            // Normal ads
             xp = Math.min(xp + 1, 149);
             notification.textContent = "";
             notificationShown = false;
-            resetGame();
+            initBoard();
           }
         } else {
-          resetGame();
+          initBoard();
         }
+
       } catch (e) {
         alert("Ad failed to load. Please try again.");
       }
     }
 
-    // Buttons
-    restartBtn.addEventListener("click", resetGame);
-
-    rewardBtn.addEventListener("click", () => {
-      showAdsAndContinue(true); // GigaPub
-    });
-
-    nextBtn.addEventListener("click", () => {
-      // Use GigaPub on Next as requested
-      showAdsAndContinue(true);
-    });
-
-    createBoard();
-    updateBoard();
-  </script>
-
-  <script>
-    // Init OnClickA (TMA) — kept as-is, but not used for Next button
-    window.initCdTma?.({ id: 6084887 }).then(show => {
-      window.showTMA = show;
-    }).catch(e => console.warn("TMA init failed:", e));
+    initBoard();
   </script>
 </body>
 </html>
