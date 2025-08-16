@@ -1,250 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Player vs Computer</title>
-
-  <!-- Telegram Mini App SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <!-- GigaPub Ads -->
   <script src="https://ad.gigapub.tech/script?id=1794"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background: #f3f3f3;
-    }
-    h1 {
-      margin-bottom: 20px;
-    }
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-template-rows: repeat(3, 100px);
-      gap: 5px;
-    }
-    .cell {
-      width: 100px;
-      height: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      background: #fff;
-      cursor: pointer;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-    .cell.taken {
-      pointer-events: none;
-    }
-    #notification {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    #nextBtn {
-      margin-top: 20px;
-      padding: 10px 20px;
-      background: #2196f3;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    #nextBtn:disabled {
-      background: #aaa;
-      cursor: not-allowed;
-    }
-  </style>
 </head>
 <body>
-  <h1>Player vs Computer</h1>
-  <div class="board" id="board"></div>
-  <div id="notification"></div>
-  <button id="nextBtn" disabled>Next</button>
+  <div class="game-container">
+    <h1>Tic-Tac-Toe</h1>
+    <div id="board" class="board"></div>
+    <p id="status"></p>
+    <p id="notification"></p>
+
+    <button id="nextBtn">Next</button>
+    <button id="rewardBtn">Reward</button>
+  </div>
 
   <script>
-    const boardEl = document.getElementById("board");
+    const boardElement = document.getElementById("board");
+    const statusElement = document.getElementById("status");
     const notification = document.getElementById("notification");
     const nextBtn = document.getElementById("nextBtn");
+    const rewardBtn = document.getElementById("rewardBtn");
 
-    let board, currentPlayer, gameOver;
+    let board = Array(9).fill(null);
+    let player = "X";
+    let computer = "O";
     let xp = 0;
     let adWatchCount = 0;
-    let notificationShown = false;
+    let timerInterval;
 
-    function initBoard() {
-      board = ["", "", "", "", "", "", "", "", ""];
-      currentPlayer = "X";
-      gameOver = false;
-      boardEl.innerHTML = "";
-      for (let i = 0; i < 9; i++) {
+    // Create board
+    function createBoard() {
+      boardElement.innerHTML = "";
+      board.forEach((value, index) => {
         const cell = document.createElement("div");
         cell.classList.add("cell");
-        cell.dataset.index = i;
+        cell.dataset.index = index;
+        cell.textContent = value || "";
         cell.addEventListener("click", handleCellClick);
-        boardEl.appendChild(cell);
-      }
-      nextBtn.disabled = true;
+        boardElement.appendChild(cell);
+      });
     }
 
+    // Player move
     function handleCellClick(e) {
-      if (gameOver) return;
       const idx = e.target.dataset.index;
-      if (board[idx] === "") {
-        board[idx] = currentPlayer;
-        e.target.textContent = currentPlayer;
-        e.target.classList.add("taken");
-        if (checkWinner(board, currentPlayer)) {
-          gameOver = true;
-          notification.textContent = "🎉 You Win!";
-          showNextBtn();
-        } else if (board.every(c => c !== "")) {
-          gameOver = true;
-          notification.textContent = "😐 Draw!";
-          showNextBtn();
-        } else {
-          currentPlayer = "O";
-          setTimeout(computerMove, 500);
+      if (!board[idx] && !checkWinner(board)) {
+        board[idx] = player;
+        createBoard();
+        if (!checkWinner(board) && board.includes(null)) {
+          setTimeout(computerMove, 300);
         }
       }
     }
 
+    // Computer move (hardest)
     function computerMove() {
-      if (gameOver) return;
-      const bestMove = getBestMove(board, "O");
-      board[bestMove] = "O";
-      const cell = boardEl.querySelector(`[data-index='${bestMove}']`);
-      cell.textContent = "O";
-      cell.classList.add("taken");
-      if (checkWinner(board, "O")) {
-        gameOver = true;
-        notification.textContent = "💻 Computer Wins!";
-        showNextBtn();
-      } else if (board.every(c => c !== "")) {
-        gameOver = true;
-        notification.textContent = "😐 Draw!";
-        showNextBtn();
-      } else {
-        currentPlayer = "X";
-      }
-    }
-
-    function checkWinner(b, p) {
-      const wins = [
-        [0,1,2],[3,4,5],[6,7,8],
-        [0,3,6],[1,4,7],[2,5,8],
-        [0,4,8],[2,4,6]
-      ];
-      return wins.some(comb => comb.every(i => b[i] === p));
-    }
-
-    function getBestMove(b, player) {
       let bestScore = -Infinity;
       let move;
-      for (let i = 0; i < 9; i++) {
-        if (b[i] === "") {
-          b[i] = player;
-          let score = minimax(b, 0, false);
-          b[i] = "";
+      board.forEach((cell, i) => {
+        if (!cell) {
+          board[i] = computer;
+          let score = minimax(board, 0, false);
+          board[i] = null;
           if (score > bestScore) {
             bestScore = score;
             move = i;
           }
         }
-      }
-      return move;
+      });
+      board[move] = computer;
+      createBoard();
+      checkWinner(board);
     }
 
-    function minimax(b, depth, isMaximizing) {
-      if (checkWinner(b, "O")) return 10 - depth;
-      if (checkWinner(b, "X")) return depth - 10;
-      if (b.every(c => c !== "")) return 0;
+    function minimax(newBoard, depth, isMaximizing) {
+      let winner = evaluate(newBoard);
+      if (winner !== null) return winner;
 
       if (isMaximizing) {
         let bestScore = -Infinity;
-        for (let i = 0; i < 9; i++) {
-          if (b[i] === "") {
-            b[i] = "O";
-            let score = minimax(b, depth+1, false);
-            b[i] = "";
+        newBoard.forEach((cell, i) => {
+          if (!cell) {
+            newBoard[i] = computer;
+            let score = minimax(newBoard, depth + 1, false);
+            newBoard[i] = null;
             bestScore = Math.max(score, bestScore);
           }
-        }
+        });
         return bestScore;
       } else {
         let bestScore = Infinity;
-        for (let i = 0; i < 9; i++) {
-          if (b[i] === "") {
-            b[i] = "X";
-            let score = minimax(b, depth+1, true);
-            b[i] = "";
+        newBoard.forEach((cell, i) => {
+          if (!cell) {
+            newBoard[i] = player;
+            let score = minimax(newBoard, depth + 1, true);
+            newBoard[i] = null;
             bestScore = Math.min(score, bestScore);
           }
-        }
+        });
         return bestScore;
       }
     }
 
-    function showNextBtn() {
-      nextBtn.disabled = false;
+    function evaluate(bd) {
+      const winner = checkWinner(bd);
+      if (winner === computer) return 10;
+      if (winner === player) return -10;
+      if (!bd.includes(null)) return 0;
+      return null;
     }
 
-    nextBtn.addEventListener("click", () => {
-      showAdsAndContinue(true);
-    });
+    function checkWinner(bd) {
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for (let [a,b,c] of wins) {
+        if (bd[a] && bd[a] === bd[b] && bd[a] === bd[c]) {
+          statusElement.textContent = `${bd[a]} Wins!`;
+          return bd[a];
+        }
+      }
+      if (!bd.includes(null)) {
+        statusElement.textContent = "Draw!";
+        return "draw";
+      }
+      return null;
+    }
 
-    async function showAdsAndContinue(incrementLevel = false) {
+    function resetGame() {
+      board = Array(9).fill(null);
+      statusElement.textContent = "";
+      createBoard();
+    }
+
+    // Show GigaPub ads logic
+    async function showGigaAd(incrementLevel = false) {
       try {
-        await window.showGiga(); // show GigaPub ad
+        if (typeof window.showGiga !== "function") {
+          alert("Ad not ready, please try again.");
+          return;
+        }
+
+        await window.showGiga();
         adWatchCount++;
 
         if (incrementLevel) {
           if (adWatchCount % 9 === 0) {
-            // Special rule: must click and wait 30s
-            notification.innerHTML = `<p style="color:red;font-weight:bold;">Click the Ads</p>
-              <button id="confirmClick" style="background:#ff9800;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;">
-                I Clicked the Ad
-              </button>`;
+            notification.innerHTML = `<p style="color:red;font-weight:bold;">Click the Ads</p>`;
+            const confirmBtn = document.createElement("button");
+            confirmBtn.textContent = "I Clicked the Ad";
+            confirmBtn.style = "background:#ff9800;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;";
+            notification.appendChild(confirmBtn);
 
-            document.getElementById("confirmClick").onclick = () => {
+            confirmBtn.onclick = () => {
               let timeLeft = 30;
               notification.innerHTML = `<p>⏳ Please wait <span id="timer">${timeLeft}</span> seconds...</p>`;
-              
-              let timerInterval = setInterval(() => {
+              timerInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById("timer").textContent = timeLeft;
-
                 if (timeLeft <= 0) {
                   clearInterval(timerInterval);
                   notification.innerHTML = `<p style="color:green;font-weight:bold;">✅ Successful</p>`;
                   setTimeout(() => {
                     xp = Math.min(xp + 1, 149);
                     notification.textContent = "";
-                    notificationShown = false;
-                    initBoard();
+                    resetGame();
                   }, 1500);
                 }
               }, 1000);
             };
           } else {
-            // Normal ads
             xp = Math.min(xp + 1, 149);
             notification.textContent = "";
-            notificationShown = false;
-            initBoard();
+            resetGame();
           }
         } else {
-          initBoard();
+          resetGame();
         }
 
       } catch (e) {
@@ -252,7 +190,12 @@
       }
     }
 
-    initBoard();
+    // Event bindings
+    nextBtn.addEventListener("click", () => showGigaAd(true));
+    rewardBtn.addEventListener("click", () => showGigaAd(false));
+
+    // Init board
+    createBoard();
   </script>
 </body>
 </html>
