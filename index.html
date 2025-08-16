@@ -160,6 +160,7 @@
     let gameActive = true;
     let xp = 0;
     let notificationShown = false;
+    let playerTurn = true; // ✅ controls turn order
 
     const winningCombinations = [
       [0,1,2],[3,4,5],[6,7,8],
@@ -229,9 +230,29 @@
       if (!gameActive) return;
       const empty = getEmptyIndices();
       if (empty.length === 0) return;
-      const move = empty[Math.floor(Math.random() * empty.length)];
+
+      const levelName = getLevelName(getLevel());
+      let move;
+
+      // Hardest AI: block player first, then win, else random
+      if (levelName === "Hardest") {
+        move = findBestMove("X");
+        if (move === null) move = findBestMove("O");
+        if (move === null) move = empty[Math.floor(Math.random() * empty.length)];
+      }
+      // Hard AI: try to win
+      else if (levelName === "Hard") {
+        move = findBestMove("O");
+        if (move === null) move = empty[Math.floor(Math.random() * empty.length)];
+      }
+      // Medium & Easy: random
+      else {
+        move = empty[Math.floor(Math.random() * empty.length)];
+      }
+
       board[move] = "O";
       updateBoard();
+
       const win = checkWin("O");
       if (win) {
         flashCells(win);
@@ -249,13 +270,24 @@
         restartBtn.style.display = 'inline-block';
         nextBtn.style.display = 'none';
         return;
-      } else {
-        statusText.textContent = "Your turn (X)";
       }
+
+      playerTurn = true; // ✅ give turn back to player
+      statusText.textContent = "Your turn (X)";
+    }
+
+    function findBestMove(player) {
+      for (let combo of winningCombinations) {
+        const values = combo.map(i => board[i]);
+        if (values.filter(v => v === player).length === 2 && values.includes("")) {
+          return combo[values.indexOf("")];
+        }
+      }
+      return null;
     }
 
     function playerMove(i) {
-      if (!gameActive || board[i] !== "") return;
+      if (!gameActive || !playerTurn || board[i] !== "") return; // ✅ block multiple clicks
       board[i] = "X";
       updateBoard();
       const win = checkWin("X");
@@ -280,6 +312,7 @@
         nextBtn.style.display = 'none';
         return;
       }
+      playerTurn = false; // ✅ lock until computer moves
       statusText.textContent = "Computer's turn (O)";
       setTimeout(computerMove, 500);
     }
@@ -287,6 +320,7 @@
     function resetGame() {
       board = Array(9).fill("");
       gameActive = true;
+      playerTurn = true; // ✅ player starts
       statusText.textContent = "Your turn (X)";
       updateBoard();
       restartBtn.style.display = 'none';
