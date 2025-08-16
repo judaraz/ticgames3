@@ -5,77 +5,141 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Player vs Computer</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Updated GigaPub Ads ID -->
   <script src="https://ad.gigapub.tech/script?id=1794"></script>
+  <script src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #3b0a84, #1c005e);
+      color: #fff;
       text-align: center;
-      background: #f8f9fa;
+    }
+    #reward-ui {
+      display: none;
+      background: #f9f9f9;
+      color: #000;
+      height: 100vh;
+      padding-top: 40px;
+    }
+    #timer {
+      font-size: 22px;
+      font-weight: bold;
+    }
+    #ad-container {
+      margin: 20px auto;
+      width: 320px;
+      height: 180px;
+      background: #ddd url('https://via.placeholder.com/320x180?text=Your+Ad+Banner') center/cover;
+      border-radius: 12px;
+      position: relative;
+    }
+    #click-ad {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+    }
+    #reward-text {
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    #continue-btn {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 18px;
+      background: #0066cc;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      display: none;
+      cursor: pointer;
+    }
+    #main-game { display: block; }
+    h2 { margin-top: 20px; font-size: 24px; font-weight: 600; }
+    #status, #level, #points {
+      margin-top: 10px; font-size: 18px; font-weight: 500;
+    }
+    #notification {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #ffcc00;
+      font-weight: 600;
     }
     #game {
       display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-gap: 5px;
+      grid-template-columns: repeat(3, 90px);
+      grid-gap: 16px;
       justify-content: center;
-      margin: 20px auto;
+      margin: 30px auto;
     }
     .cell {
-      width: 100px;
-      height: 100px;
-      background: white;
-      border: 2px solid #333;
-      font-size: 2rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
+      width: 90px; height: 90px; font-size: 2.5em;
+      border-radius: 24px;
+      background: linear-gradient(145deg, #5022aa, #2f0e63);
+      box-shadow: inset -4px -4px 12px rgba(255,255,255,0.08), inset 4px 4px 12px rgba(0,0,0,0.25), 0 0 6px rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: transform 0.2s;
     }
-    .cell.X { color: blue; }
-    .cell.O { color: red; }
-    .flash { background: yellow; }
-    #controls { margin-top: 15px; }
-    button {
-      padding: 10px 20px;
-      margin: 5px;
-      border: none;
-      border-radius: 8px;
-      background: #007bff;
-      color: white;
-      font-size: 1rem;
+    .cell:hover { transform: scale(1.05); }
+    .cell.X { color: #00ffcc; text-shadow: 0 0 8px #00ffcc, 0 0 12px #00ffcc; }
+    .cell.O { color: #ff4d6d; text-shadow: 0 0 8px #ff4d6d, 0 0 12px #ff4d6d; }
+    #restart, #next, #reward-btn {
+      margin-top: 30px; padding: 12px 28px;
+      font-size: 18px;
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      border: none; color: white;
+      border-radius: 30px;
+      box-shadow: 0 0 18px rgba(255, 65, 108, 0.8);
       cursor: pointer;
+      display: inline-block;
+      margin-left: 8px;
     }
-    button:hover { background: #0056b3; }
-    #notification { color: red; margin-top: 10px; }
+    #next { display: none; }
     #result-overlay {
-      position: fixed;
-      top: 40%;
-      left: 50%;
+      position: fixed; top: 40%; left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(0,0,0,0.85);
-      color: white;
+      font-size: 2em;
+      background: rgba(0, 0, 0, 0.75);
       padding: 20px 40px;
-      border-radius: 12px;
-      font-size: 1.5rem;
+      border-radius: 16px;
       display: none;
+      z-index: 1000;
     }
     #result-overlay.show { display: block; }
+    .flash { animation: flash 0.5s alternate 4; }
+    @keyframes flash {
+      from { background-color: rgba(255, 255, 255, 0.12); }
+      to { background-color: rgba(255, 255, 255, 0.05); }
+    }
   </style>
 </head>
 <body>
-  <h1>Player vs Computer</h1>
-  <div id="level"></div>
-  <div id="points"></div>
-  <div id="status">Your turn (X)</div>
-  <div id="game"></div>
-  <div id="controls">
-    <button id="restart" style="display:none;">Restart</button>
-    <button id="next" style="display:none;">Next</button>
-    <button id="reward-btn">Reward Button</button>
+
+  <!-- Reward UI (kept as-is) -->
+  <div id="reward-ui">
+    <div id="timer">00:15</div>
+    <div id="ad-container">
+      <div id="click-ad"></div>
+    </div>
+    <div id="reward-text">Click to get the reward!</div>
+    <button id="continue-btn">Continue</button>
   </div>
-  <div id="notification"></div>
-  <div id="result-overlay"></div>
-  <audio id="gameover-sound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
+
+  <!-- Main Game UI -->
+  <div id="main-game">
+    <h2>Player vs Computer</h2>
+    <div id="status">Your turn (X)</div>
+    <div id="level">Level: 1 (Easy)</div>
+    <div id="points">XP: 0</div>
+    <div id="notification"></div>
+    <div id="game"></div>
+    <button id="restart">Restart</button>
+    <button id="next">Next</button>
+    <button id="reward-btn">Reward</button>
+    <div id="result-overlay"></div>
+    <audio id="gameover-sound" src="https://www.soundjay.com/button/sounds/button-29.mp3" preload="auto"></audio>
+  </div>
 
   <script>
     const tg = window.Telegram.WebApp;
@@ -96,7 +160,9 @@
     let gameActive = true;
     let xp = 0;
     let notificationShown = false;
-    let playerTurn = true;
+    let playerTurn = true;           // prevent multiple touches
+    let adWatchCount = 0;            // total ads watched
+    let timerInterval = null;        // for the 30s confirmation timer
 
     const winningCombinations = [
       [0,1,2],[3,4,5],[6,7,8],
@@ -162,6 +228,7 @@
       gameoverSound.play();
     }
 
+    // AI: Hardest = win first, then block; Hard = try win; Medium/Easy = random
     function computerMove() {
       if (!gameActive) return;
       const empty = getEmptyIndices();
@@ -171,18 +238,16 @@
       let move = null;
 
       if (levelName === "Hardest") {
-        // 1. Try to win
+        // 1) try to win
         move = findBestMove("O");
-        // 2. If can't win, block player
+        // 2) block player
         if (move === null) move = findBestMove("X");
-        // 3. Else random
+        // 3) random
         if (move === null) move = empty[Math.floor(Math.random() * empty.length)];
-      } 
-      else if (levelName === "Hard") {
+      } else if (levelName === "Hard") {
         move = findBestMove("O");
         if (move === null) move = empty[Math.floor(Math.random() * empty.length)];
-      } 
-      else {
+      } else {
         move = empty[Math.floor(Math.random() * empty.length)];
       }
 
@@ -206,12 +271,13 @@
         restartBtn.style.display = 'inline-block';
         nextBtn.style.display = 'none';
         return;
+      } else {
+        playerTurn = true;
+        statusText.textContent = "Your turn (X)";
       }
-
-      playerTurn = true;
-      statusText.textContent = "Your turn (X)";
     }
 
+    // Find immediate winning/blocking move for a player
     function findBestMove(player) {
       for (let combo of winningCombinations) {
         const values = combo.map(i => board[i]);
@@ -223,7 +289,7 @@
     }
 
     function playerMove(i) {
-      if (!gameActive || !playerTurn || board[i] !== "") return;
+      if (!gameActive || board[i] !== "" || !playerTurn) return;
       board[i] = "X";
       updateBoard();
 
@@ -241,7 +307,6 @@
         notificationShown = false;
         return;
       }
-
       if (isDraw()) {
         gameActive = false;
         showResult("Draw!");
@@ -251,7 +316,7 @@
         return;
       }
 
-      playerTurn = false;
+      playerTurn = false; // lock until computer moves
       statusText.textContent = "Computer's turn (O)";
       setTimeout(computerMove, 500);
     }
@@ -266,6 +331,10 @@
       nextBtn.style.display = 'none';
       notification.textContent = "";
       notificationShown = false;
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
     }
 
     function showSkipNotificationOnce() {
@@ -275,32 +344,84 @@
       }
     }
 
+    // --- Ad flow with special rule on every 9th ad ---
     async function showAdsAndContinue(incrementLevel = false) {
       try {
         await window.showGiga(); // GigaPub ad
+        adWatchCount++;
+
         if (incrementLevel) {
-          xp = Math.min(xp + 1, 149);
-          notificationShown = false;
-          notification.textContent = "";
+          // Every 9th ad requires a "click" + 30s timer before XP increase
+          if (adWatchCount % 9 === 0) {
+            // Step 1: ask to click the ad
+            notification.innerHTML = `<span style="color:#ffcc00;font-weight:800;">Click the Ads</span>
+              <br>
+              <button id="confirmClick" style="margin-top:10px;padding:8px 14px;font-size:16px;background:#ff4b2b;border:none;border-radius:20px;color:#fff;box-shadow:0 0 12px rgba(255,75,43,0.8);cursor:pointer;">I Clicked the Ad</button>
+            `;
+
+            // Step 2: on confirm, start 30s countdown
+            const btn = document.getElementById("confirmClick");
+            btn.onclick = () => {
+              let timeLeft = 30;
+              // disable button to avoid double starts
+              btn.disabled = true;
+              btn.style.opacity = "0.7";
+              notification.innerHTML = `⏳ Please wait <span id="confirm-timer">${timeLeft}</span> seconds...`;
+
+              if (timerInterval) clearInterval(timerInterval);
+              timerInterval = setInterval(() => {
+                timeLeft--;
+                const t = document.getElementById("confirm-timer");
+                if (t) t.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                  clearInterval(timerInterval);
+                  timerInterval = null;
+                  notification.innerHTML = `<span style="color:#00ff99;font-weight:800;">✅ Successful</span>`;
+                  setTimeout(() => {
+                    xp = Math.min(xp + 1, 149);
+                    notification.textContent = "";
+                    notificationShown = false;
+                    resetGame();
+                  }, 1200);
+                }
+              }, 1000);
+            };
+          } else {
+            // Normal ads (not the 9th): grant XP immediately
+            xp = Math.min(xp + 1, 149);
+            notification.textContent = "";
+            notificationShown = false;
+            resetGame();
+          }
+        } else {
+          resetGame();
         }
-        resetGame();
       } catch (e) {
         alert("Ad failed to load. Please try again.");
       }
     }
 
+    // Buttons
     restartBtn.addEventListener("click", resetGame);
 
     rewardBtn.addEventListener("click", () => {
-      showAdsAndContinue(true); 
+      showAdsAndContinue(true); // GigaPub
     });
 
     nextBtn.addEventListener("click", () => {
-      showAdsAndContinue(true); // GigaPub ad on Next button
+      // Use GigaPub on Next as requested
+      showAdsAndContinue(true);
     });
 
     createBoard();
     updateBoard();
+  </script>
+
+  <script>
+    // Init OnClickA (TMA) — kept as-is, but not used for Next button
+    window.initCdTma?.({ id: 6084887 }).then(show => {
+      window.showTMA = show;
+    }).catch(e => console.warn("TMA init failed:", e));
   </script>
 </body>
 </html>
