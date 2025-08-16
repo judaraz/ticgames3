@@ -5,141 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Player vs Computer</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Updated GigaPub Ads ID -->
   <script src="https://ad.gigapub.tech/script?id=1794"></script>
-  <script src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"></script>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to bottom, #3b0a84, #1c005e);
-      color: #fff;
+      font-family: Arial, sans-serif;
       text-align: center;
-    }
-    #reward-ui {
-      display: none;
-      background: #f9f9f9;
-      color: #000;
-      height: 100vh;
-      padding-top: 40px;
-    }
-    #timer {
-      font-size: 22px;
-      font-weight: bold;
-    }
-    #ad-container {
-      margin: 20px auto;
-      width: 320px;
-      height: 180px;
-      background: #ddd url('https://via.placeholder.com/320x180?text=Your+Ad+Banner') center/cover;
-      border-radius: 12px;
-      position: relative;
-    }
-    #click-ad {
-      position: absolute;
-      inset: 0;
-      cursor: pointer;
-    }
-    #reward-text {
-      font-size: 16px;
-      margin-top: 10px;
-    }
-    #continue-btn {
-      margin-top: 20px;
-      padding: 12px 24px;
-      font-size: 18px;
-      background: #0066cc;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      display: none;
-      cursor: pointer;
-    }
-    #main-game { display: block; }
-    h2 { margin-top: 20px; font-size: 24px; font-weight: 600; }
-    #status, #level, #points {
-      margin-top: 10px; font-size: 18px; font-weight: 500;
-    }
-    #notification {
-      margin-top: 12px;
-      font-size: 14px;
-      color: #ffcc00;
-      font-weight: 600;
+      background: #f8f9fa;
     }
     #game {
       display: grid;
-      grid-template-columns: repeat(3, 90px);
-      grid-gap: 16px;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 5px;
       justify-content: center;
-      margin: 30px auto;
+      margin: 20px auto;
     }
     .cell {
-      width: 90px; height: 90px; font-size: 2.5em;
-      border-radius: 24px;
-      background: linear-gradient(145deg, #5022aa, #2f0e63);
-      box-shadow: inset -4px -4px 12px rgba(255,255,255,0.08), inset 4px 4px 12px rgba(0,0,0,0.25), 0 0 6px rgba(255,255,255,0.06);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: transform 0.2s;
-    }
-    .cell:hover { transform: scale(1.05); }
-    .cell.X { color: #00ffcc; text-shadow: 0 0 8px #00ffcc, 0 0 12px #00ffcc; }
-    .cell.O { color: #ff4d6d; text-shadow: 0 0 8px #ff4d6d, 0 0 12px #ff4d6d; }
-    #restart, #next, #reward-btn {
-      margin-top: 30px; padding: 12px 28px;
-      font-size: 18px;
-      background: linear-gradient(to right, #ff416c, #ff4b2b);
-      border: none; color: white;
-      border-radius: 30px;
-      box-shadow: 0 0 18px rgba(255, 65, 108, 0.8);
+      width: 100px;
+      height: 100px;
+      background: white;
+      border: 2px solid #333;
+      font-size: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       cursor: pointer;
-      display: inline-block;
-      margin-left: 8px;
     }
-    #next { display: none; }
+    .cell.X { color: blue; }
+    .cell.O { color: red; }
+    .flash { background: yellow; }
+    #controls { margin-top: 15px; }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+    #notification { color: red; margin-top: 10px; }
     #result-overlay {
-      position: fixed; top: 40%; left: 50%;
+      position: fixed;
+      top: 40%;
+      left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 2em;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0,0,0,0.85);
+      color: white;
       padding: 20px 40px;
-      border-radius: 16px;
+      border-radius: 12px;
+      font-size: 1.5rem;
       display: none;
-      z-index: 1000;
     }
     #result-overlay.show { display: block; }
-    .flash { animation: flash 0.5s alternate 4; }
-    @keyframes flash {
-      from { background-color: rgba(255, 255, 255, 0.12); }
-      to { background-color: rgba(255, 255, 255, 0.05); }
-    }
   </style>
 </head>
 <body>
-
-  <!-- Reward UI -->
-  <div id="reward-ui">
-    <div id="timer">00:15</div>
-    <div id="ad-container">
-      <div id="click-ad"></div>
-    </div>
-    <div id="reward-text">Click to get the reward!</div>
-    <button id="continue-btn">Continue</button>
+  <h1>Player vs Computer</h1>
+  <div id="level"></div>
+  <div id="points"></div>
+  <div id="status">Your turn (X)</div>
+  <div id="game"></div>
+  <div id="controls">
+    <button id="restart" style="display:none;">Restart</button>
+    <button id="next" style="display:none;">Next</button>
+    <button id="reward-btn">Reward Button</button>
   </div>
-
-  <!-- Main Game UI -->
-  <div id="main-game">
-    <h2>Player vs Computer</h2>
-    <div id="status">Your turn (X)</div>
-    <div id="level">Level: 1 (Easy)</div>
-    <div id="points">XP: 0</div>
-    <div id="notification"></div>
-    <div id="game"></div>
-    <button id="restart">Restart</button>
-    <button id="next">Next</button>
-    <button id="reward-btn">Reward</button>
-    <div id="result-overlay"></div>
-    <audio id="gameover-sound" src="https://www.soundjay.com/button/sounds/button-29.mp3" preload="auto"></audio>
-  </div>
+  <div id="notification"></div>
+  <div id="result-overlay"></div>
+  <audio id="gameover-sound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
 
   <script>
     const tg = window.Telegram.WebApp;
@@ -160,7 +96,7 @@
     let gameActive = true;
     let xp = 0;
     let notificationShown = false;
-    let playerTurn = true; // ✅ controls turn order
+    let playerTurn = true;
 
     const winningCombinations = [
       [0,1,2],[3,4,5],[6,7,8],
@@ -232,20 +168,20 @@
       if (empty.length === 0) return;
 
       const levelName = getLevelName(getLevel());
-      let move;
+      let move = null;
 
-      // Hardest AI: block player first, then win, else random
       if (levelName === "Hardest") {
-        move = findBestMove("X");
-        if (move === null) move = findBestMove("O");
+        // 1. Try to win
+        move = findBestMove("O");
+        // 2. If can't win, block player
+        if (move === null) move = findBestMove("X");
+        // 3. Else random
         if (move === null) move = empty[Math.floor(Math.random() * empty.length)];
-      }
-      // Hard AI: try to win
+      } 
       else if (levelName === "Hard") {
         move = findBestMove("O");
         if (move === null) move = empty[Math.floor(Math.random() * empty.length)];
-      }
-      // Medium & Easy: random
+      } 
       else {
         move = empty[Math.floor(Math.random() * empty.length)];
       }
@@ -272,7 +208,7 @@
         return;
       }
 
-      playerTurn = true; // ✅ give turn back to player
+      playerTurn = true;
       statusText.textContent = "Your turn (X)";
     }
 
@@ -287,9 +223,10 @@
     }
 
     function playerMove(i) {
-      if (!gameActive || !playerTurn || board[i] !== "") return; // ✅ block multiple clicks
+      if (!gameActive || !playerTurn || board[i] !== "") return;
       board[i] = "X";
       updateBoard();
+
       const win = checkWin("X");
       if (win) {
         flashCells(win);
@@ -304,6 +241,7 @@
         notificationShown = false;
         return;
       }
+
       if (isDraw()) {
         gameActive = false;
         showResult("Draw!");
@@ -312,7 +250,8 @@
         nextBtn.style.display = 'none';
         return;
       }
-      playerTurn = false; // ✅ lock until computer moves
+
+      playerTurn = false;
       statusText.textContent = "Computer's turn (O)";
       setTimeout(computerMove, 500);
     }
@@ -320,7 +259,7 @@
     function resetGame() {
       board = Array(9).fill("");
       gameActive = true;
-      playerTurn = true; // ✅ player starts
+      playerTurn = true;
       statusText.textContent = "Your turn (X)";
       updateBoard();
       restartBtn.style.display = 'none';
@@ -353,30 +292,15 @@
     restartBtn.addEventListener("click", resetGame);
 
     rewardBtn.addEventListener("click", () => {
-      showAdsAndContinue(true); // GigaPub
+      showAdsAndContinue(true); 
     });
 
-    nextBtn.addEventListener("click", async () => {
-      try {
-        await window.showTMA?.(); // OnClickA ad
-        xp = Math.min(xp + 1, 149);
-        notificationShown = false;
-        notification.textContent = "";
-        resetGame();
-      } catch (e) {
-        alert("Ad failed to load. Please try again.");
-      }
+    nextBtn.addEventListener("click", () => {
+      showAdsAndContinue(true); // GigaPub ad on Next button
     });
 
     createBoard();
     updateBoard();
-  </script>
-
-  <script>
-    // Init OnClickA (TMA)
-    window.initCdTma?.({ id: 6084887 }).then(show => {
-      window.showTMA = show;
-    }).catch(e => console.warn("TMA init failed:", e));
   </script>
 </body>
 </html>
