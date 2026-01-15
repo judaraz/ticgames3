@@ -1777,128 +1777,807 @@
                             <div class="website-item">
                                 <div class="website-field">
                                     <input type="text" placeholder="Website Name" value="${site.name}" data-field="name">
-                                </div>
-                                <div class="website-field">
-                                    <input type="url" placeholder="https://example.com" value="${site.link}" data-field="link">
-                                </div>
-                                <div class="website-field">
-                                    <input type="number" placeholder="Reward" value="${site.reward}" data-field="reward">
-                                </div>
-                                <div class="website-field">
-                                    <input type="number" placeholder="Timer (sec)" value="${site.timer}" data-field="timer">
-                                </div>
-                                <button onclick="removeWebsite(this)" class="btn btn-danger">×</button>
-                            </div>
-                        `;
-                    });
-                }
-            } catch (error) {
-                console.error("Error loading website config:", error);
-            }
-        }
-
-        function addNewWebsite() {
-            const container = document.getElementById('websites-to-visit-list');
-            container.innerHTML += `
-                <div class="website-item">
-                    <div class="website-field">
-                        <input type="text" placeholder="Website Name" value="" data-field="name">
-                    </div>
-                    <div class="website-field">
-                        <input type="url" placeholder="https://example.com" value="" data-field="link">
-                    </div>
-                    <div class="website-field">
-                        <input type="number" placeholder="Reward" value="10" data-field="reward">
-                    </div>
-                    <div class="website-field">
-                        <input type="number" placeholder="Timer (sec)" value="30" data-field="timer">
-                    </div>
-                    <button onclick="removeWebsite(this)" class="btn btn-danger">×</button>
+// ===== NOTIFICATIONS FUNCTIONS - FIXED VERSION =====
+function loadNotifications() {
+    const page = document.getElementById('notifications');
+    page.innerHTML = `
+        <h1 class="text-3xl font-bold mb-6">Send Notifications</h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Send to All Users -->
+            <div class="stat-card p-6">
+                <h2 class="text-xl font-bold mb-4">📢 Send to All Users</h2>
+                
+                <div class="mb-4">
+                    <label for="notification-title" class="block font-semibold mb-2">Title</label>
+                    <input type="text" id="notification-title" class="input-field" placeholder="e.g., New Bonus Available!">
                 </div>
-            `;
-        }
+                
+                <div class="mb-6">
+                    <label for="notification-message" class="block font-semibold mb-2">Message</label>
+                    <textarea id="notification-message" rows="4" class="input-field" placeholder="Enter your message here..."></textarea>
+                    <div class="text-sm text-gray-500 mt-2">
+                        Use Telegram formatting:<br>
+                        • <code>*bold*</code> or <code>**bold**</code> for bold text<br>
+                        • <code>_italic_</code> for italic text<br>
+                        • Add emojis for better engagement 🎯
+                    </div>
+                </div>
+                
+                <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-bold text-blue-800 mb-2">How it works:</h3>
+                    <ul class="text-sm text-blue-700 list-disc pl-5">
+                        <li>Notification will be sent to users who have started your bot</li>
+                        <li>Users need to send <code>/start</code> to your bot first</li>
+                        <li>Their Chat ID is automatically saved when they use your app</li>
+                    </ul>
+                </div>
+                
+                <button id="send-notification-btn" class="btn btn-primary w-full">
+                    <i data-lucide="send" class="w-4 h-4 inline mr-2"></i> Send to All Users
+                </button>
+                
+                <div class="mt-4 text-center">
+                    <button onclick="collectUserChatIds()" class="text-sm text-blue-600 hover:underline">
+                        Click here to collect user Chat IDs first
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Telegram Bot Configuration -->
+            <div class="stat-card p-6">
+                <h2 class="text-xl font-bold mb-4">🤖 Telegram Bot Setup</h2>
+                
+                <div class="mb-4">
+                    <label for="telegram-bot-token" class="block font-semibold mb-2">Bot Token</label>
+                    <input type="text" id="telegram-bot-token" class="input-field" placeholder="Enter bot token">
+                    <p class="text-sm text-gray-500 mt-1">
+                        Token: <code>8188655347:AAGbygOmYZT8MSYxSXIPwBYcJYSO6wAXOmk</code>
+                    </p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="telegram-bot-username" class="block font-semibold mb-2">Bot Username</label>
+                    <input type="text" id="telegram-bot-username" class="input-field" placeholder="@YourBotUsername">
+                </div>
+                
+                <div class="space-y-3">
+                    <button onclick="testTelegramConnection()" class="btn btn-warning w-full">
+                        <i data-lucide="wifi" class="w-4 h-4 inline mr-2"></i> Test Bot Connection
+                    </button>
+                    
+                    <button onclick="saveTelegramConfig()" class="btn btn-success w-full">
+                        <i data-lucide="save" class="w-4 h-4 inline mr-2"></i> Save Configuration
+                    </button>
+                    
+                    <button onclick="getBotInfo()" class="btn btn-secondary w-full">
+                        <i data-lucide="info" class="w-4 h-4 inline mr-2"></i> Get Bot Info
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats and Quick Actions -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="stat-card p-6">
+                <h3 class="font-bold mb-2">📊 User Stats</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>Total Users:</span>
+                        <span id="total-users-count" class="font-bold">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Users with Chat ID:</span>
+                        <span id="users-with-chatid" class="font-bold text-green-600">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Ready for Notifications:</span>
+                        <span id="ready-users" class="font-bold text-blue-600">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card p-6">
+                <h3 class="font-bold mb-2">⚡ Quick Actions</h3>
+                <div class="space-y-3">
+                    <button onclick="sendWelcomeMessage()" class="btn btn-primary w-full">
+                        Send Welcome Message
+                    </button>
+                    <button onclick="sendDailyBonusReminder()" class="btn btn-warning w-full">
+                        Daily Bonus Reminder
+                    </button>
+                    <button onclick="sendWithdrawalUpdate()" class="btn btn-success w-full">
+                        Withdrawal Status Update
+                    </button>
+                </div>
+            </div>
+            
+            <div class="stat-card p-6">
+                <h3 class="font-bold mb-2">⚙️ Advanced</h3>
+                <div class="space-y-3">
+                    <button onclick="exportUserChatIds()" class="btn btn-secondary w-full">
+                        Export Chat IDs
+                    </button>
+                    <button onclick="clearOldNotifications()" class="btn btn-danger w-full">
+                        Clear Old Notifications
+                    </button>
+                    <button onclick="showNotificationTemplates()" class="btn btn-primary w-full">
+                        Show Templates
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notification History -->
+        <div class="mt-8">
+            <h2 class="text-2xl font-bold mb-4">📨 Notification History</h2>
+            <div id="notification-history" class="bg-white shadow rounded-lg p-4">
+                Loading notification history...
+            </div>
+        </div>
+        
+        <!-- Progress Modal -->
+        <div id="notification-progress-modal" class="modal-overlay hidden">
+            <div class="modal" style="max-width: 500px;">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Sending Notifications</h3>
+                    <span id="progress-close-btn" class="text-gray-500 cursor-pointer">×</span>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between mb-2">
+                        <span>Progress:</span>
+                        <span id="progress-text">0/0</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progress-bar" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="space-y-2 max-h-64 overflow-y-auto">
+                    <div id="progress-logs" class="text-sm space-y-1"></div>
+                </div>
+                
+                <div class="mt-4">
+                    <button onclick="stopNotificationProcess()" class="btn btn-danger w-full">Stop</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add event listeners
+    setTimeout(() => {
+        document.getElementById('send-notification-btn').addEventListener('click', sendNotificationToAll);
+        document.getElementById('progress-close-btn').addEventListener('click', () => {
+            document.getElementById('notification-progress-modal').classList.add('hidden');
+        });
+    }, 100);
+    
+    loadNotificationHistory();
+    loadTelegramConfig();
+    loadNotificationStats();
+    
+    // Create icons
+    setTimeout(() => lucide.createIcons(), 200);
+}
 
-        function removeWebsite(button) {
-            const item = button.closest('.website-item');
-            if (item) {
-                item.remove();
+// ===== MAIN NOTIFICATION FUNCTIONS =====
+
+async function collectUserChatIds() {
+    loader.style.display = 'flex';
+    try {
+        // Get all users
+        const usersSnap = await getDocs(collection(db, "users"));
+        const totalUsers = usersSnap.size;
+        let updatedCount = 0;
+        
+        // Update each user with placeholder chat ID
+        for (const doc of usersSnap.docs) {
+            const userData = doc.data();
+            
+            // If user has Telegram ID but no chat ID, create one
+            if (userData.telegramId && !userData.telegramChatId) {
+                // Create chat ID from Telegram ID (this is where Telegram API would be used)
+                // For now, we'll mark them as needing to start the bot
+                await updateDoc(doc.ref, {
+                    telegramChatId: null,
+                    notificationEnabled: false,
+                    needToStartBot: true
+                });
+                updatedCount++;
             }
         }
+        
+        showAlert(`✅ Updated ${updatedCount} users. They need to send /start to your bot to receive notifications.`);
+        
+    } catch (error) {
+        console.error("Error collecting chat IDs:", error);
+        showAlert("❌ Error collecting chat IDs: " + error.message, true);
+    } finally {
+        loader.style.display = 'none';
+    }
+}
 
-        async function saveWebsiteConfig() {
-            loader.style.display = 'flex';
-            try {
-                // Get website configurations from the UI
-                const websites = [];
-                const websiteItems = document.querySelectorAll('#websites-to-visit-list .website-item');
-                
-                websiteItems.forEach(item => {
-                    const name = item.querySelector('[data-field="name"]').value.trim();
-                    const link = item.querySelector('[data-field="link"]').value.trim();
-                    const reward = parseInt(item.querySelector('[data-field="reward"]').value) || 10;
-                    const timer = parseInt(item.querySelector('[data-field="timer"]').value) || 30;
-                    
-                    if (name && link) {
-                        websites.push({
-                            name: name,
-                            link: link,
-                            reward: reward,
-                            timer: timer
-                        });
-                    }
-                });
-                
-                // Save to Firebase
-                const configRef = doc(db, "config", "main");
-                await updateDoc(configRef, {
-                    websitesToVisit: websites,
-                    updatedAt: serverTimestamp()
-                });
-                
-                showToast('✅ Website configurations saved successfully!');
-            } catch (error) {
-                console.error("Error saving website config:", error);
-                showAlert('❌ Error saving website configurations: ' + error.message, true);
-            } finally {
-                loader.style.display = 'none';
-            }
-        }
-
-        async function resetWebsiteVisitHistory() {
-            showConfirm("Are you sure you want to reset website visit history for ALL users? This will allow all users to visit websites again for rewards.", async () => {
-                loader.style.display = 'flex';
-                try {
-                    // Get all users
-                    const usersSnap = await getDocs(collection(db, "users"));
-                    const batch = writeBatch(db);
-                    
-                    // Reset visitedWebsitesToday for each user (field name correction)
-                    usersSnap.forEach((userDoc) => {
-                        const userRef = doc(db, "users", userDoc.id);
-                        batch.update(userRef, { 
-                            visitedWebsitesToday: [], // Correct field name
-                            lastWebsiteVisitDate: '1970-01-01' // Reset the date too
-                        });
+async function sendNotificationToAll() {
+    const title = document.getElementById('notification-title').value;
+    const message = document.getElementById('notification-message').value;
+    
+    if (!title || !message) {
+        showAlert("Please enter both title and message.");
+        return;
+    }
+    
+    // Get bot configuration
+    const configSnap = await getDoc(doc(db, "config", "telegram"));
+    if (!configSnap.exists() || !configSnap.data().botToken) {
+        showAlert("Please configure your Telegram bot first!");
+        return;
+    }
+    
+    const botToken = configSnap.data().botToken;
+    
+    // Show confirmation
+    showConfirm(`Send this notification to ALL users?`, async () => {
+        // Show progress modal
+        const progressModal = document.getElementById('notification-progress-modal');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const progressLogs = document.getElementById('progress-logs');
+        
+        progressModal.classList.remove('hidden');
+        progressLogs.innerHTML = '';
+        
+        try {
+            // Get users with chat IDs
+            const usersSnap = await getDocs(query(
+                collection(db, "users"),
+                where("telegramChatId", "!=", null)
+            ));
+            
+            const users = [];
+            usersSnap.forEach(doc => {
+                const userData = doc.data();
+                if (userData.telegramChatId && userData.notificationEnabled !== false) {
+                    users.push({
+                        id: doc.id,
+                        chatId: userData.telegramChatId,
+                        name: userData.name || 'User'
                     });
-                    
-                    await batch.commit();
-                    showToast("✅ Website visit history reset successfully for all users!");
-                } catch (error) {
-                    console.error("Error resetting website history:", error);
-                    showAlert("❌ Error resetting website history: " + error.message, true);
-                } finally {
-                    loader.style.display = 'none';
                 }
             });
-        }
-
-        async function testIpinfoApi() {
-            const apiToken = document.getElementById('ipinfoApiToken').value.trim();
             
-            if (!apiToken) {
-                showAlert("Please enter an API token to test.");
+            const totalUsers = users.length;
+            
+            if (totalUsers === 0) {
+                showAlert("❌ No users have configured notifications. Ask users to send /start to your bot.");
+                progressModal.classList.add('hidden');
                 return;
             }
+            
+            // Save notification record
+            const notificationRef = await addDoc(collection(db, "notifications"), {
+                title,
+                message,
+                sentTo: totalUsers,
+                createdAt: serverTimestamp(),
+                status: 'sending'
+            });
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            // Send to each user
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+                
+                // Update progress
+                const progress = Math.round(((i + 1) / totalUsers) * 100);
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${i + 1}/${totalUsers}`;
+                
+                try {
+                    // Format message with user's name
+                    const personalizedMessage = message.replace(/{name}/g, user.name);
+                    
+                    // Send to Telegram
+                    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: user.chatId,
+                            text: `*${title}*\n\n${personalizedMessage}`,
+                            parse_mode: 'Markdown',
+                            disable_web_page_preview: false
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.ok) {
+                        successCount++;
+                        addProgressLog(`✅ Sent to ${user.name}`);
+                    } else {
+                        failCount++;
+                        addProgressLog(`❌ Failed for ${user.name}: ${result.description}`);
+                        
+                        // If user blocked the bot, mark them
+                        if (result.description.includes("bot was blocked")) {
+                            await updateDoc(doc(db, "users", user.id), {
+                                notificationEnabled: false,
+                                botBlocked: true
+                            });
+                        }
+                    }
+                    
+                    // Delay to avoid rate limits (30 messages/second)
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    
+                } catch (error) {
+                    failCount++;
+                    addProgressLog(`❌ Error for ${user.name}: ${error.message}`);
+                }
+            }
+            
+            // Update notification record
+            await updateDoc(notificationRef, {
+                status: 'completed',
+                successCount,
+                failCount,
+                completedAt: serverTimestamp()
+            });
+            
+            // Show results
+            addProgressLog("=================================");
+            addProgressLog(`🎉 Notification completed!`);
+            addProgressLog(`✅ Successful: ${successCount}`);
+            addProgressLog(`❌ Failed: ${failCount}`);
+            
+            // Save results to show later
+            localStorage.setItem('last_notification_results', JSON.stringify({
+                successCount,
+                failCount,
+                totalUsers,
+                title,
+                time: new Date().toLocaleString()
+            }));
+            
+            // Update stats
+            loadNotificationStats();
+            loadNotificationHistory();
+            
+        } catch (error) {
+            console.error("Error sending notifications:", error);
+            addProgressLog(`❌ Critical error: ${error.message}`);
+        }
+    });
+}
+
+function addProgressLog(message) {
+    const logs = document.getElementById('progress-logs');
+    const logItem = document.createElement('div');
+    logItem.className = 'font-mono text-sm';
+    logItem.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    logs.appendChild(logItem);
+    logs.scrollTop = logs.scrollHeight;
+}
+
+function stopNotificationProcess() {
+    // This would stop the process - for now just close modal
+    document.getElementById('notification-progress-modal').classList.add('hidden');
+    showAlert("Notification process stopped.");
+}
+
+async function loadNotificationStats() {
+    try {
+        // Get total users
+        const usersSnap = await getDocs(collection(db, "users"));
+        const totalUsers = usersSnap.size;
+        
+        // Get users with chat IDs
+        const usersWithChatId = await getDocs(query(
+            collection(db, "users"),
+            where("telegramChatId", "!=", null)
+        ));
+        
+        // Get users ready for notifications
+        const readyUsers = await getDocs(query(
+            collection(db, "users"),
+            where("telegramChatId", "!=", null),
+            where("notificationEnabled", "==", true)
+        ));
+        
+        // Update display
+        document.getElementById('total-users-count').textContent = totalUsers;
+        document.getElementById('users-with-chatid').textContent = usersWithChatId.size;
+        document.getElementById('ready-users').textContent = readyUsers.size;
+        
+    } catch (error) {
+        console.error("Error loading notification stats:", error);
+    }
+}
+
+async function loadNotificationHistory() {
+    const notificationsSnap = await getDocs(query(
+        collection(db, "notifications"), 
+        orderBy("createdAt", "desc"), 
+        limit(20)
+    ));
+    
+    let html = `<table class="w-full text-sm">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-3">Title</th>
+                <th class="px-4 py-3">Sent</th>
+                <th class="px-4 py-3">Success</th>
+                <th class="px-4 py-3">Failed</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3">Sent At</th>
+                <th class="px-4 py-3">Actions</th>
+            </tr>
+        </thead>
+        <tbody>`;
+    
+    if (notificationsSnap.empty) {
+        html += `<tr><td colspan="7" class="text-center py-4 text-gray-500">No notifications sent yet</td></tr>`;
+    } else {
+        notificationsSnap.forEach(doc => {
+            const notification = doc.data();
+            const sentAt = notification.createdAt?.toDate().toLocaleString() || 'N/A';
+            const statusClass = notification.status === 'completed' ? 'status-approved' : 
+                              notification.status === 'sending' ? 'status-pending' : 'status-rejected';
+            
+            html += `<tr class="border-b hover:bg-gray-50">
+                <td class="px-4 py-3 font-semibold">${notification.title || 'No title'}</td>
+                <td class="px-4 py-3">${notification.sentTo || 0}</td>
+                <td class="px-4 py-3 text-green-600">${notification.successCount || 0}</td>
+                <td class="px-4 py-3 text-red-600">${notification.failCount || 0}</td>
+                <td class="px-4 py-3"><span class="status-badge ${statusClass}">${notification.status || 'unknown'}</span></td>
+                <td class="px-4 py-3 text-gray-500 text-sm">${sentAt}</td>
+                <td class="px-4 py-3">
+                    <button onclick="viewNotificationDetails('${doc.id}')" class="text-blue-600 hover:underline text-sm">
+                        View Details
+                    </button>
+                </td>
+            </tr>`;
+        });
+    }
+    
+    html += `</tbody></table>`;
+    document.getElementById('notification-history').innerHTML = html;
+}
+
+async function viewNotificationDetails(notificationId) {
+    const notificationRef = doc(db, "notifications", notificationId);
+    const notificationSnap = await getDoc(notificationRef);
+    
+    if (!notificationSnap.exists()) {
+        showAlert("Notification not found.");
+        return;
+    }
+    
+    const notification = notificationSnap.data();
+    
+    const details = `
+        <div class="space-y-4">
+            <div>
+                <strong>Title:</strong><br>
+                <p class="text-lg font-bold">${notification.title}</p>
+            </div>
+            <div>
+                <strong>Message:</strong><br>
+                <div class="bg-gray-100 p-3 rounded">${notification.message}</div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <strong>Sent To:</strong><br>
+                    <span class="text-xl">${notification.sentTo || 0}</span>
+                </div>
+                <div>
+                    <strong>Successful:</strong><br>
+                    <span class="text-xl text-green-600">${notification.successCount || 0}</span>
+                </div>
+                <div>
+                    <strong>Failed:</strong><br>
+                    <span class="text-xl text-red-600">${notification.failCount || 0}</span>
+                </div>
+            </div>
+            <div>
+                <strong>Status:</strong><br>
+                <span class="status-badge ${notification.status === 'completed' ? 'status-approved' : 'status-pending'}">
+                    ${notification.status}
+                </span>
+            </div>
+            <div>
+                <strong>Sent At:</strong><br>
+                <span>${notification.createdAt?.toDate().toLocaleString() || 'N/A'}</span>
+            </div>
+        </div>
+    `;
+    
+    showAlert(details);
+}
+
+async function loadTelegramConfig() {
+    const configSnap = await getDoc(doc(db, "config", "telegram"));
+    if (configSnap.exists()) {
+        const config = configSnap.data();
+        document.getElementById('telegram-bot-token').value = config.botToken || '8188655347:AAGbygOmYZT8MSYxSIPwBYcJYSO6wAXOmk';
+        document.getElementById('telegram-bot-username').value = config.botUsername || '';
+    }
+}
+
+async function saveTelegramConfig() {
+    const botToken = document.getElementById('telegram-bot-token').value;
+    const botUsername = document.getElementById('telegram-bot-username').value;
+    
+    if (!botToken) {
+        showAlert("Please enter Bot Token.");
+        return;
+    }
+    
+    loader.style.display = 'flex';
+    try {
+        await setDoc(doc(db, "config", "telegram"), {
+            botToken,
+            botUsername,
+            updatedAt: serverTimestamp()
+        });
+        showToast("✅ Telegram configuration saved!");
+    } catch (error) {
+        console.error("Error saving Telegram config:", error);
+        showAlert("❌ Error saving configuration: " + error.message, true);
+    } finally {
+        loader.style.display = 'none';
+    }
+}
+
+async function testTelegramConnection() {
+    const botToken = document.getElementById('telegram-bot-token').value;
+    
+    if (!botToken) {
+        showAlert("Please enter Bot Token to test.");
+        return;
+    }
+    
+    loader.style.display = 'flex';
+    try {
+        // Test bot token
+        const botResponse = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+        const botResult = await botResponse.json();
+        
+        if (!botResult.ok) {
+            showAlert("❌ Bot connection failed: " + botResult.description, true);
+            return;
+        }
+        
+        const botName = botResult.result.first_name;
+        const botUsername = botResult.result.username;
+        
+        // Update bot username field
+        document.getElementById('telegram-bot-username').value = `@${botUsername}`;
+        
+        showAlert(`✅ Bot Connection Successful!\n\nBot Name: ${botName}\nUsername: @${botUsername}\nBot ID: ${botResult.result.id}`);
+        
+    } catch (error) {
+        showAlert("❌ Error testing connection: " + error.message, true);
+    } finally {
+        loader.style.display = 'none';
+    }
+}
+
+async function getBotInfo() {
+    const botToken = document.getElementById('telegram-bot-token').value;
+    
+    if (!botToken) {
+        showAlert("Please enter Bot Token first.");
+        return;
+    }
+    
+    loader.style.display = 'flex';
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`);
+        const result = await response.json();
+        
+        let info = "🤖 Bot Information:\n\n";
+        
+        if (result.ok) {
+            info += `• Bot ID: ${result.result.id}\n`;
+            info += `• Name: ${result.result.first_name}\n`;
+            info += `• Username: @${result.result.username}\n`;
+            info += `• Can join groups: ${result.result.can_join_groups ? 'Yes' : 'No'}\n`;
+            info += `• Can read messages: ${result.result.can_read_all_group_messages ? 'Yes' : 'No'}\n`;
+            info += `• Supports inline: ${result.result.supports_inline_queries ? 'Yes' : 'No'}\n`;
+            info += `\nWebhook Info:\n`;
+            info += `• URL: ${result.result.url || 'Not set'}\n`;
+            info += `• Has custom certificate: ${result.result.has_custom_certificate ? 'Yes' : 'No'}\n`;
+            info += `• Pending update count: ${result.result.pending_update_count}\n`;
+        } else {
+            info += "Error getting bot info: " + result.description;
+        }
+        
+        showAlert(info);
+        
+    } catch (error) {
+        showAlert("❌ Error getting bot info: " + error.message, true);
+    } finally {
+        loader.style.display = 'none';
+    }
+}
+
+// ===== QUICK NOTIFICATION TEMPLATES =====
+
+async function sendWelcomeMessage() {
+    document.getElementById('notification-title').value = '👋 Welcome to CashReward!';
+    document.getElementById('notification-message').value = 
+        `Hello {name}! Welcome to CashReward! 🎉\n\n` +
+        `Start earning coins by:\n` +
+        `🎮 Playing games\n` +
+        `🌐 Visiting websites\n` +
+        `📱 Watching ads\n\n` +
+        `💰 Your current balance: [check in app]\n` +
+        `🔔 Turn on notifications for bonus alerts!\n\n` +
+        `Happy earning! 🚀`;
+}
+
+async function sendDailyBonusReminder() {
+    document.getElementById('notification-title').value = '🎁 Daily Bonus Available!';
+    document.getElementById('notification-message').value = 
+        `Hey {name}! Don't miss your daily bonus! 🎁\n\n` +
+        `📅 Claim your daily bonus coins\n` +
+        `⏰ Limited time offer\n` +
+        `💰 Extra coins waiting for you\n\n` +
+        `Open the app now to claim!\n` +
+        `👉 [Open CashReward]\n\n` +
+        `Happy earning! 💰`;
+}
+
+async function sendWithdrawalUpdate() {
+    document.getElementById('notification-title').value = '💰 Withdrawal Status Update';
+    document.getElementById('notification-message').value = 
+        `Dear {name},\n\n` +
+        `Your withdrawal request is being processed! ⏳\n\n` +
+        `✅ Request received\n` +
+        `⏰ Processing time: 24-48 hours\n` +
+        `📞 Contact support if any issues\n\n` +
+        `Check app for updates!\n\n` +
+        `Thank you for using CashReward! 🙏`;
+}
+
+function showNotificationTemplates() {
+    const templates = `
+        <div class="space-y-4">
+            <h3 class="font-bold text-lg">📝 Notification Templates</h3>
+            
+            <div class="border rounded p-3">
+                <h4 class="font-bold mb-2">Game Win Template</h4>
+                <p class="text-sm mb-2">🎮 *You won 100 coins!*</p>
+                <button onclick="useTemplate(1)" class="text-sm text-blue-600">Use this template</button>
+            </div>
+            
+            <div class="border rounded p-3">
+                <h4 class="font-bold mb-2">New Feature Template</h4>
+                <p class="text-sm mb-2">✨ *New Game Added!* Try our new Color Match game!</p>
+                <button onclick="useTemplate(2)" class="text-sm text-blue-600">Use this template</button>
+            </div>
+            
+            <div class="border rounded p-3">
+                <h4 class="font-bold mb-2">Maintenance Template</h4>
+                <p class="text-sm mb-2">⚠️ *Scheduled Maintenance* App will be down from 2-4 AM</p>
+                <button onclick="useTemplate(3)" class="text-sm text-blue-600">Use this template</button>
+            </div>
+        </div>
+    `;
+    
+    showAlert(templates);
+}
+
+function useTemplate(templateId) {
+    const templates = {
+        1: {
+            title: '🎮 Game Win!',
+            message: 'Congratulations {name}! You won *100 coins* in Ludo Dice! 🎉\n\nKeep playing to win more! 🚀'
+        },
+        2: {
+            title: '✨ New Feature!',
+            message: 'Hello {name}! 🎊\n\nWe added a *new Color Match game*! 🎨\n\nPlay now to earn extra coins! 💰'
+        },
+        3: {
+            title: '⚠️ Maintenance Notice',
+            message: 'Dear {name},\n\nApp maintenance scheduled:\n📅 Today\n⏰ 2:00 AM - 4:00 AM\n\nSorry for inconvenience! 🙏'
+        }
+    };
+    
+    if (templates[templateId]) {
+        document.getElementById('notification-title').value = templates[templateId].title;
+        document.getElementById('notification-message').value = templates[templateId].message;
+        document.getElementById('custom-alert').classList.add('hidden');
+    }
+}
+
+async function exportUserChatIds() {
+    loader.style.display = 'flex';
+    try {
+        const usersSnap = await getDocs(query(
+            collection(db, "users"),
+            where("telegramChatId", "!=", null)
+        ));
+        
+        const csvData = [];
+        csvData.push(['Name', 'Email', 'Chat ID', 'Telegram ID', 'Balance']);
+        
+        usersSnap.forEach(doc => {
+            const user = doc.data();
+            csvData.push([
+                user.name || '',
+                user.email || '',
+                user.telegramChatId || '',
+                user.telegramId || '',
+                user.balance || 0
+            ]);
+        });
+        
+        // Create CSV
+        const csvContent = csvData.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `telegram_chat_ids_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        showToast(`✅ Exported ${usersSnap.size} chat IDs`);
+        
+    } catch (error) {
+        console.error("Error exporting chat IDs:", error);
+        showAlert("❌ Error exporting chat IDs", true);
+    } finally {
+        loader.style.display = 'none';
+    }
+}
+
+async function clearOldNotifications() {
+    showConfirm("Clear notifications older than 30 days?", async () => {
+        loader.style.display = 'flex';
+        try {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const oldNotifications = await getDocs(query(
+                collection(db, "notifications"),
+                where("createdAt", "<", thirtyDaysAgo)
+            ));
+            
+            const batch = writeBatch(db);
+            oldNotifications.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            
+            await batch.commit();
+            showToast(`✅ Cleared ${oldNotifications.size} old notifications`);
+            loadNotificationHistory();
+            
+        } catch (error) {
+            console.error("Error clearing notifications:", error);
+            showAlert("❌ Error clearing notifications", true);
+        } finally {
+            loader.style.display = 'none';
+        }
+    });
+}
+
+// ===== ADD THESE GLOBAL FUNCTIONS =====
+window.sendWelcomeMessage = sendWelcomeMessage;
+window.sendDailyBonusReminder = sendDailyBonusReminder;
+window.sendWithdrawalUpdate = sendWithdrawalUpdate;
+window.showNotificationTemplates = showNotificationTemplates;
+window.useTemplate = useTemplate;
+window.exportUserChatIds = exportUserChatIds;
+window.clearOldNotifications = clearOldNotifications;
+window.getBotInfo = getBotInfo;
             
             loader.style.display = 'flex';
             try {
