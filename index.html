@@ -1,301 +1,1014 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Ludo Dice - Win Rewards</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ludo Dice - Win Rewards</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Telegram WebApp -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- RichPartners SDK (Primary) -->
+    <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+    
+    <!-- Tad.me SDK for Bonus Ads -->
+    <script src="https://w.tads.me/widget.js" async></script>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<!-- Telegram WebApp -->
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<!-- RichAds SDK (Primary) -->
-<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-
-<!-- TADS SDK (Fallback) -->
-<script src="https://w.tads.me/widget.js" async></script>
-
-<style>
-:root {
-  --telegram-blue:#3390ec;
-  --telegram-dark:#18222d;
-  --gold:#ffd700;
-  --success:#34c759;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  background:var(--telegram-dark);
-  color:#fff;
-  min-height:100vh;
-  padding:16px;
-}
-.container{
-  max-width:420px;
-  margin:auto;
-  display:flex;
-  flex-direction:column;
-  gap:16px
-}
-.game-header{
-  text-align:center;
-  padding:20px;
-  background:rgba(255,255,255,.05);
-  border-radius:16px
-}
-.game-title{
-  font-size:26px;
-  color:var(--gold);
-  font-weight:800
-}
-.points-container{
-  background:linear-gradient(135deg,#2c3e50,#3498db);
-  padding:20px;
-  border-radius:16px;
-  text-align:center
-}
-.points-value{
-  font-size:36px;
-  font-weight:900;
-  color:var(--gold)
-}
-.ludo-board{
-  width:260px;
-  height:260px;
-  background:#fff;
-  margin:auto;
-  border-radius:16px;
-  position:relative
-}
-.dice{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  font-size:48px
-}
-.controls{
-  background:rgba(255,255,255,.05);
-  padding:16px;
-  border-radius:16px
-}
-.roll-btn{
-  width:100%;
-  padding:16px;
-  font-size:18px;
-  background:var(--telegram-blue);
-  border:none;
-  border-radius:12px;
-  color:#fff
-}
-.popup-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.85);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:999
-}
-.popup{
-  background:#fff;
-  color:#000;
-  border-radius:16px;
-  width:100%;
-  max-width:320px;
-  padding:20px;
-  text-align:center
-}
-.popup-btn{
-  margin-top:16px;
-  padding:14px;
-  width:100%;
-  border:none;
-  border-radius:12px;
-  color:#fff;
-  background:var(--success)
-}
-.ads-content{
-  min-height:180px;
-  display:flex;
-  align-items:center;
-  justify-content:center
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-  <div class="game-header">
-    <div class="game-title">🎲 LUDO DICE</div>
-    <p>Roll dice & win rewards</p>
-  </div>
-
-  <div class="points-container">
-    <div>YOUR POINTS</div>
-    <div class="points-value" id="pointsValue">1,000</div>
-  </div>
-
-  <div class="ludo-board">
-    <div class="dice" id="dice">⚅</div>
-  </div>
-
-  <div class="controls">
-    <button class="roll-btn" id="rollBtn">
-      <i class="fas fa-dice"></i> ROLL (100 POINTS)
-    </button>
-  </div>
-</div>
-
-<!-- RESULT POPUP -->
-<div class="popup-overlay" id="resultPopup">
-  <div class="popup">
-    <h2>🎉 YOU WON</h2>
-    <div id="winAmount" style="font-size:32px;margin:12px 0"></div>
-    <button class="popup-btn" id="claimBtn">CLAIM</button>
-  </div>
-</div>
-
-<!-- ADS POPUP -->
-<div class="popup-overlay" id="adsPopup">
-  <div class="popup">
-    <h2>🎁 BONUS</h2>
-    <div class="ads-content" id="adsContainer">
-      Loading ad...
-    </div>
-    <button class="popup-btn" id="closeAdsBtn" style="display:none;background:var(--telegram-blue)">
-      CONTINUE (+50)
-    </button>
-  </div>
-</div>
-
-<script>
-/* ================= TELEGRAM ================= */
-if (window.Telegram?.WebApp) {
-  Telegram.WebApp.ready();
-  Telegram.WebApp.expand();
-}
-
-/* ================= STATE ================= */
-let points = 1000;
-let currentWin = 0;
-let richAdsLoaded = false;
-let tadsReady = false;
-let tadsController = null;
-
-/* ✅ TADS WIDGET ID SET */
-const TADS_WIDGET_ID = "9154";
-
-/* ================= DOM ================= */
-const rollBtn = document.getElementById("rollBtn");
-const dice = document.getElementById("dice");
-const pointsValue = document.getElementById("pointsValue");
-const resultPopup = document.getElementById("resultPopup");
-const winAmount = document.getElementById("winAmount");
-const claimBtn = document.getElementById("claimBtn");
-const adsPopup = document.getElementById("adsPopup");
-const adsContainer = document.getElementById("adsContainer");
-const closeAdsBtn = document.getElementById("closeAdsBtn");
-
-/* ================= RICHADS ================= */
-try {
-  window.TelegramAdsController = new TelegramAdsController();
-  TelegramAdsController.initialize({
-    pubId:"956231",
-    appId:"5595"
-  });
-  richAdsLoaded = true;
-} catch(e) {
-  console.log("RichAds not available");
-}
-
-/* ================= GAME ================= */
-function updatePoints(){
-  pointsValue.textContent = points.toLocaleString();
-}
-
-function rollDice(){
-  if(points < 100) return;
-  points -= 100;
-
-  const d = Math.floor(Math.random()*6)+1;
-  dice.textContent = ["⚀","⚁","⚂","⚃","⚄","⚅"][d-1];
-  currentWin = d * 100;
-
-  updatePoints();
-  setTimeout(()=>{
-    winAmount.textContent = currentWin + " POINTS";
-    resultPopup.style.display = "flex";
-  },400);
-}
-
-function claimPrize(){
-  points += currentWin;
-  updatePoints();
-  resultPopup.style.display = "none";
-  setTimeout(showAdsForBonus,300);
-}
-
-/* ================= ADS FLOW ================= */
-function showAdsForBonus(){
-  adsPopup.style.display = "flex";
-  closeAdsBtn.style.display = "none";
-  adsContainer.textContent = "Loading ad...";
-
-  if(richAdsLoaded){
-    try{
-      TelegramAdsController.showAd();
-      setTimeout(giveBonus,5000);
-      return;
-    }catch{}
-  }
-  showTadsAd();
-}
-
-async function showTadsAd(){
-  if(!tadsReady){
-    await new Promise(resolve=>{
-      const iv = setInterval(()=>{
-        if(window.tads?.init){
-          clearInterval(iv);
-          tadsReady = true;
-          resolve();
+    <style>
+        :root {
+            --telegram-blue: #3390ec;
+            --telegram-dark: #18222d;
+            --gold: #ffd700;
+            --success: #34c759;
+            --danger: #ff3b30;
         }
-      },50);
-    });
-  }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--telegram-dark);
+            color: white;
+            min-height: 100vh;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 140px; /* Space for TGB ad */
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        /* Header */
+        .game-header {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .game-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--gold);
+            margin-bottom: 4px;
+        }
+        
+        .game-subtitle {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* Points Display */
+        .points-container {
+            width: 100%;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            border: 2px solid var(--gold);
+        }
+        
+        .points-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 8px;
+        }
+        
+        .points-value {
+            font-size: 40px;
+            font-weight: 900;
+            color: var(--gold);
+        }
+        
+        /* Ludo Board */
+        .ludo-board {
+            width: 280px;
+            height: 280px;
+            background: white;
+            border-radius: 16px;
+            border: 6px solid #2c3e50;
+            position: relative;
+            transform: rotate(45deg);
+            margin: 16px 0;
+            overflow: hidden;
+        }
+        
+        .quadrant {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+        }
+        
+        .quadrant-1 { top: 0; left: 0; background: #ff6b6b; border-bottom-right-radius: 100%; }
+        .quadrant-2 { top: 0; right: 0; background: #4ecdc4; border-bottom-left-radius: 100%; }
+        .quadrant-3 { bottom: 0; left: 0; background: #ffd93d; border-top-right-radius: 100%; }
+        .quadrant-4 { bottom: 0; right: 0; background: #6c5ce7; border-top-left-radius: 100%; }
+        
+        .board-center {
+            position: absolute;
+            width: 40%;
+            height: 40%;
+            background: white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 3px solid #2c3e50;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .board-center span {
+            transform: rotate(-45deg);
+            font-weight: 800;
+            color: #2c3e50;
+        }
+        
+        /* Dice */
+        .dice {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 10px;
+            border: 4px solid #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 900;
+            color: #2c3e50;
+            z-index: 10;
+        }
+        
+        /* Controls */
+        .controls {
+            width: 100%;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .roll-btn {
+            width: 100%;
+            background: var(--telegram-blue);
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .roll-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .roll-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .cost-info {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* TGB Ad Container - Fixed at Bottom */
+        .tgb-ad-container {
+            position: fixed;
+            bottom: 70px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 50;
+        }
+        
+        .tgb-ad-wrapper {
+            width: 128px;
+            height: 128px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .tgb-ad-label {
+            position: absolute;
+            top: -20px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .tgb-ad-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        /* Popups */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+        
+        .popup {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 320px;
+            padding: 24px;
+            text-align: center;
+            animation: popIn 0.3s;
+        }
+        
+        @keyframes popIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .popup-title {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        
+        .dice-result {
+            font-size: 60px;
+            margin: 16px 0;
+        }
+        
+        .win-info {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--success);
+            margin: 16px 0;
+        }
+        
+        .popup-btn {
+            width: 100%;
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        /* Ads Popup */
+        .ads-content {
+            min-height: 180px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .audio-control {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            width: 48px;
+            height: 48px;
+            background: var(--telegram-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            border: 2px solid white;
+        }
+        
+        /* Instructions */
+        .instructions {
+            width: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 480px) {
+            .ludo-board {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .dice {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .game-title {
+                font-size: 24px;
+            }
+            
+            .points-value {
+                font-size: 36px;
+            }
+            
+            .roll-btn {
+                padding: 16px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-header">
+            <h1 class="game-title">🎲 LUDO DICE ROLL</h1>
+            <p class="game-subtitle">Roll dice, win points, get rewards!</p>
+        </div>
+        
+        <div class="points-container">
+            <div class="points-label">YOUR POINTS</div>
+            <div class="points-value" id="pointsValue">1,000</div>
+        </div>
+        
+        <div class="ludo-board">
+            <div class="quadrant quadrant-1"></div>
+            <div class="quadrant quadrant-2"></div>
+            <div class="quadrant quadrant-3"></div>
+            <div class="quadrant quadrant-4"></div>
+            <div class="board-center">
+                <span>LUDO</span>
+            </div>
+            <div class="dice" id="dice">6</div>
+        </div>
+        
+        <div class="controls">
+            <button class="roll-btn" id="rollBtn">
+                <i class="fas fa-dice"></i> ROLL DICE - 100 POINTS
+            </button>
+            <div class="cost-info">Win multiplier: 1x to 6x</div>
+        </div>
+        
+        <div class="instructions">
+            <p><strong>How to play:</strong> Tap ROLL DICE (costs 100 points). Dice shows 1-6. Win = dice number × 100 points. Watch ad for bonus!</p>
+        </div>
+    </div>
+    
+    <!-- TGB Ad Container (Always visible at bottom) -->
+    <div class="tgb-ad-container">
+        <div class="tgb-ad-label">Sponsored</div>
+        <div class="tgb-ad-wrapper" id="tgbAdContainer">
+            <div class="tgb-ad-placeholder" id="tgbAdPlaceholder">
+                <i class="fas fa-ad" style="font-size: 24px; margin-bottom: 8px;"></i>
+                <span>Loading Ad...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Result Popup -->
+    <div class="popup-overlay" id="resultPopup">
+        <div class="popup">
+            <h2 class="popup-title">🎉 YOU WON!</h2>
+            <div class="dice-result" id="resultDice">⚅</div>
+            <div class="win-info" id="winAmount">600 POINTS</div>
+            <button class="popup-btn" id="claimBtn">
+                <i class="fas fa-gift"></i> CLAIM PRIZE
+            </button>
+        </div>
+    </div>
+    
+    <!-- Ads Popup -->
+    <div class="popup-overlay" id="adsPopup">
+        <div class="popup">
+            <h2 class="popup-title">🎁 BONUS REWARD</h2>
+            <div class="ads-content" id="adsContainer">
+                <div style="color: #6c757d; text-align: center;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading reward...
+                </div>
+            </div>
+            <button class="popup-btn" id="closeAdsBtn" style="background: var(--telegram-blue); display: none;">
+                <i class="fas fa-check"></i> CONTINUE (+50 BONUS)
+            </button>
+        </div>
+    </div>
+    
+    <div class="audio-control" id="audioControl">
+        <i class="fas fa-volume-up"></i>
+    </div>
 
-  if(!tadsController){
-    tadsController = window.tads.init({
-      widgetId: TADS_WIDGET_ID,
-      type: "fullscreen",
-      onShowReward: giveBonus,
-      onAdsNotFound: giveBonus
-    });
-  }
+    <!-- Audio Elements -->
+    <audio id="diceSound" src="https://assets.mixkit.co/sfx/preview/mixkit-dice-roll-1978.mp3" preload="auto"></audio>
+    <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3" preload="auto"></audio>
+    <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" preload="auto"></audio>
 
-  tadsController.showAd().catch(giveBonus);
-}
+    <script>
+        // ===== ADS SDK INITIALIZATION =====
+        let richAdsLoaded = false;
+        let tadsLoaded = false;
+        let tadsController = null;
+        const TADS_WIDGET_ID = "9154";
+        const TADS_IS_DEBUG = false; // Set to true for debugging
+        
+        // TGB Ads Configuration
+        const TGB_WIDGET_ID = "9156";
+        let tgbController = null;
+        let tgbAdLoaded = false;
+        let rollCount = 0;
+        const TGB_AD_INTERVAL = 3; // Show TGB ad every 3 rolls (reduced from 5)
+        
+        // Initialize Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            console.log("✅ Telegram WebApp initialized");
+        }
+        
+        // Initialize RichAds
+        try {
+            if (typeof TelegramAdsController !== 'undefined') {
+                window.TelegramAdsController = new TelegramAdsController();
+                window.TelegramAdsController.initialize({
+                    pubId: "956231",
+                    appId: "5595",
+                });
+                richAdsLoaded = true;
+                console.log("✅ RichAds initialized successfully");
+            } else {
+                console.log("❌ TelegramAdsController not defined");
+            }
+        } catch (error) {
+            console.log("❌ RichAds initialization error:", error);
+        }
+        
+        // Initialize Tad.me (Bonus Ads)
+        function initializeTads() {
+            if (typeof window.tads !== 'undefined' && window.tads) {
+                try {
+                    console.log("🔄 Tad.me SDK loaded, initializing...");
+                    
+                    // Check if already initialized
+                    if (window.tads.controllers && window.tads.controllers[TADS_WIDGET_ID]) {
+                        tadsController = window.tads.controllers[TADS_WIDGET_ID];
+                        tadsLoaded = true;
+                        console.log("✅ Tad.me controller already exists");
+                    } else if (typeof window.tads.init === 'function') {
+                        // Initialize new controller for fullscreen ads
+                        tadsController = window.tads.init({
+                            widgetId: TADS_WIDGET_ID,
+                            type: "fullscreen",
+                            debug: TADS_IS_DEBUG,
+                            onShowReward: function(result) {
+                                console.log("✅ Tad.me ad completed, reward user:", result);
+                            },
+                            onAdsNotFound: function() {
+                                console.log("❌ Tad.me: No ads found");
+                                // Fallback handled in showMockAd()
+                            }
+                        });
+                        tadsLoaded = true;
+                        console.log("✅ Tad.me initialized successfully");
+                    } else {
+                        console.log("❌ Tad.me init function not available");
+                    }
+                } catch (error) {
+                    console.log("❌ Tad.me initialization error:", error);
+                }
+            } else {
+                console.log("❌ Tad.me SDK not loaded yet");
+            }
+        }
+        
+        // Initialize TGB Ads (Static Banner)
+        function initializeTGBAds() {
+            if (typeof window.tads !== 'undefined' && window.tads) {
+                try {
+                    console.log("🔄 Initializing TGB Ads (static banner)...");
+                    
+                    // Callbacks for TGB ads
+                    const tgbAdsNotFoundCallback = () => {
+                        console.log('❌ TGB: No ads found to show');
+                        showTGBPlaceholder();
+                    };
 
-function giveBonus(){
-  adsContainer.innerHTML = "<b>+50 BONUS</b>";
-  points += 50;
-  updatePoints();
-  closeAdsBtn.style.display = "block";
-}
+                    const tgbOnClickRewardCallback = (adId) => {
+                        console.log('✅ TGB: Clicked ad:', adId);
+                    };
 
-function closeAds(){
-  adsPopup.style.display = "none";
-}
+                    // Initialize TGB static banner
+                    if (typeof window.tads.init === 'function') {
+                        tgbController = window.tads.init({
+                            widgetId: TGB_WIDGET_ID,
+                            type: 'static',
+                            debug: false, // Use 'true' for development
+                            onClickReward: tgbOnClickRewardCallback,
+                            onAdsNotFound: tgbAdsNotFoundCallback
+                        });
+                        
+                        console.log("✅ TGB Ads controller initialized");
+                        loadTGBAd();
+                    }
+                } catch (error) {
+                    console.log("❌ TGB Ads initialization error:", error);
+                    showTGBPlaceholder();
+                }
+            } else {
+                console.log("❌ Tad.me SDK not available for TGB ads");
+                showTGBPlaceholder();
+            }
+        }
+        
+        // Load TGB Ad
+        function loadTGBAd() {
+            if (tgbController && typeof tgbController.loadAd === 'function') {
+                console.log("🔄 Loading TGB ad...");
+                
+                tgbController.loadAd()
+                    .then(() => {
+                        console.log("✅ TGB ad loaded successfully");
+                        tgbAdLoaded = true;
+                        showTGBAd();
+                    })
+                    .catch((err) => {
+                        console.log("❌ TGB ad load error:", err);
+                        showTGBPlaceholder();
+                    });
+            } else {
+                console.log("❌ TGB controller not available");
+                showTGBPlaceholder();
+            }
+        }
+        
+        // Show TGB Ad
+        function showTGBAd() {
+            const tgbContainer = document.getElementById('tgbAdContainer');
+            if (tgbContainer && tgbController && tgbAdLoaded) {
+                console.log("🎯 Showing TGB ad...");
+                try {
+                    // Clear container
+                    tgbContainer.innerHTML = '';
+                    
+                    // Show ad
+                    tgbController.showAd();
+                    
+                    // Mark as shown
+                    console.log("✅ TGB ad displayed");
+                    
+                    // Reload ad after a while (e.g., 30 seconds)
+                    setTimeout(() => {
+                        if (tgbAdLoaded) {
+                            loadTGBAd();
+                        }
+                    }, 30000);
+                    
+                } catch (error) {
+                    console.log("❌ TGB ad show error:", error);
+                    showTGBPlaceholder();
+                }
+            } else {
+                showTGBPlaceholder();
+            }
+        }
+        
+        // Show TGB Placeholder
+        function showTGBPlaceholder() {
+            const tgbContainer = document.getElementById('tgbAdContainer');
+            if (tgbContainer) {
+                tgbContainer.innerHTML = `
+                    <div class="tgb-ad-placeholder">
+                        <i class="fas fa-ad" style="font-size: 24px; margin-bottom: 8px;"></i>
+                        <span>Ad will appear soon</span>
+                    </div>
+                `;
+                
+                // Try to reload TGB ad after 10 seconds
+                setTimeout(() => {
+                    if (!tgbAdLoaded) {
+                        initializeTGBAds();
+                    }
+                }, 10000);
+            }
+        }
+        
+        // Show TGB interstitial ad after certain number of rolls
+        function showTGBInterstitialAd() {
+            if (tgbController && typeof tgbController.showAd === 'function') {
+                console.log("🎯 Showing TGB interstitial ad (after every " + TGB_AD_INTERVAL + " rolls)...");
+                try {
+                    tgbController.showAd().then(() => {
+                        console.log("✅ TGB interstitial ad completed");
+                        // Give small bonus for watching interstitial
+                        points += 10;
+                        updatePoints();
+                        showTemporaryMessage("+10 bonus for watching ad!");
+                    }).catch((err) => {
+                        console.log("❌ TGB interstitial ad error:", err);
+                    });
+                } catch (error) {
+                    console.log("❌ TGB interstitial ad error:", error);
+                }
+            }
+        }
+        
+        // Show temporary message
+        function showTemporaryMessage(message) {
+            const msgEl = document.createElement('div');
+            msgEl.textContent = message;
+            msgEl.style.cssText = `
+                position: fixed;
+                top: 20%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(52, 199, 89, 0.9);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 20px;
+                font-weight: 600;
+                z-index: 2000;
+                animation: fadeInOut 2s ease-in-out;
+            `;
+            
+            document.body.appendChild(msgEl);
+            
+            // Add CSS for animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeInOut {
+                    0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+                    20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            setTimeout(() => {
+                if (msgEl.parentNode) {
+                    msgEl.parentNode.removeChild(msgEl);
+                }
+            }, 2000);
+        }
+        
+        // Wait for Tad.me SDK to load
+        function waitForTadsReady(timeout = 5000) {
+            return new Promise((resolve, reject) => {
+                if (window.tads && typeof window.tads.init === 'function') {
+                    return resolve();
+                }
 
-/* ================= EVENTS ================= */
-rollBtn.onclick = rollDice;
-claimBtn.onclick = claimPrize;
-closeAdsBtn.onclick = closeAds;
-updatePoints();
-</script>
-
+                const start = performance.now();
+                const iv = setInterval(() => {
+                    if (window.tads && typeof window.tads.init === 'function') {
+                        clearInterval(iv);
+                        resolve();
+                    } else if (performance.now() - start > timeout) {
+                        clearInterval(iv);
+                        reject(new Error("Tad.me widget script not loaded"));
+                    }
+                }, 50);
+            });
+        }
+        
+        // Initialize all ads after page loads
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                initializeTads();
+                initializeTGBAds();
+            }, 1000);
+        });
+        
+        // ===== GAME VARIABLES =====
+        let points = 1000;
+        let isRolling = false;
+        let isAudioOn = true;
+        let currentWin = 0;
+        let currentDice = 6;
+        
+        // DOM Elements
+        const rollBtn = document.getElementById('rollBtn');
+        const pointsValue = document.getElementById('pointsValue');
+        const dice = document.getElementById('dice');
+        const resultPopup = document.getElementById('resultPopup');
+        const resultDice = document.getElementById('resultDice');
+        const winAmount = document.getElementById('winAmount');
+        const claimBtn = document.getElementById('claimBtn');
+        const adsPopup = document.getElementById('adsPopup');
+        const adsContainer = document.getElementById('adsContainer');
+        const closeAdsBtn = document.getElementById('closeAdsBtn');
+        const audioControl = document.getElementById('audioControl');
+        
+        // Audio Elements
+        const diceSound = document.getElementById('diceSound');
+        const winSound = document.getElementById('winSound');
+        const clickSound = document.getElementById('clickSound');
+        
+        // Dice faces
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        
+        // ===== GAME FUNCTIONS =====
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        function updatePoints() {
+            pointsValue.textContent = formatNumber(points);
+        }
+        
+        function playSound(sound) {
+            if (!isAudioOn) return;
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log("Audio:", e));
+        }
+        
+        function toggleAudio() {
+            isAudioOn = !isAudioOn;
+            const icon = audioControl.querySelector('i');
+            icon.className = isAudioOn ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+            playSound(clickSound);
+        }
+        
+        // ===== DICE ROLL FUNCTION =====
+        function rollDice() {
+            if (isRolling || points < 100) return;
+            
+            isRolling = true;
+            rollBtn.disabled = true;
+            
+            // Deduct points
+            points -= 100;
+            updatePoints();
+            playSound(diceSound);
+            
+            // Increment roll count
+            rollCount++;
+            
+            // Animation
+            let rolls = 0;
+            const totalRolls = 15;
+            
+            function animateRoll() {
+                if (rolls < totalRolls) {
+                    currentDice = Math.floor(Math.random() * 6) + 1;
+                    dice.textContent = currentDice;
+                    dice.style.transform = `translate(-50%, -50%) rotate(-45deg) rotate(${Math.random() * 360}deg)`;
+                    rolls++;
+                    setTimeout(animateRoll, 80);
+                } else {
+                    // Final result
+                    currentDice = Math.floor(Math.random() * 6) + 1;
+                    currentWin = currentDice * 100;
+                    dice.textContent = currentDice;
+                    dice.style.transform = 'translate(-50%, -50%) rotate(-45deg)';
+                    
+                    setTimeout(showResult, 500);
+                    isRolling = false;
+                    rollBtn.disabled = false;
+                    
+                    // Check if we should show TGB interstitial ad
+                    if (rollCount % TGB_AD_INTERVAL === 0) {
+                        setTimeout(showTGBInterstitialAd, 1000);
+                    }
+                }
+            }
+            
+            animateRoll();
+        }
+        
+        function showResult() {
+            resultDice.textContent = diceFaces[currentDice - 1];
+            winAmount.textContent = formatNumber(currentWin) + ' POINTS';
+            resultPopup.style.display = 'flex';
+            playSound(winSound);
+        }
+        
+        function claimPrize() {
+            playSound(clickSound);
+            points += currentWin;
+            updatePoints();
+            resultPopup.style.display = 'none';
+            setTimeout(showAdsForBonus, 300);
+        }
+        
+        // ===== ADS SYSTEM =====
+        async function showAdsForBonus() {
+            adsPopup.style.display = 'flex';
+            closeAdsBtn.style.display = 'none';
+            adsContainer.innerHTML = '<div style="color: #6c757d; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading reward...</div>';
+            
+            // Try RichAds first
+            if (richAdsLoaded && window.TelegramAdsController) {
+                console.log("🎯 Showing RichAds...");
+                showRichAds();
+            } else {
+                // If RichAds not available, try Tad.me
+                console.log("🎯 RichAds not available, trying Tad.me...");
+                await showTadsAds();
+            }
+        }
+        
+        function showRichAds() {
+            try {
+                // Try to show RichAds
+                window.TelegramAdsController.showAd();
+                
+                // Wait for ad completion (assume 5 seconds)
+                setTimeout(() => {
+                    console.log("✅ RichAds completed");
+                    giveBonus();
+                }, 5000);
+                
+            } catch (error) {
+                console.log("❌ RichAds error:", error);
+                showTadsAds();
+            }
+        }
+        
+        async function showTadsAds() {
+            console.log("🔄 Attempting to show Tad.me fullscreen ad...");
+            
+            try {
+                // Wait for Tad.me to be ready
+                if (!tadsLoaded) {
+                    console.log("🔄 Waiting for Tad.me to be ready...");
+                    await waitForTadsReady();
+                    initializeTads();
+                }
+                
+                if (tadsController && typeof tadsController.showAd === 'function') {
+                    console.log("🎯 Showing Tad.me fullscreen ad...");
+                    
+                    // Show the ad
+                    await tadsController.showAd();
+                    
+                    console.log("✅ Tad.me ad completed successfully");
+                    giveBonus();
+                    
+                } else if (window.tads && typeof window.tads.init === 'function') {
+                    // Try to initialize and show ad
+                    console.log("🎯 Initializing and showing Tad.me ad...");
+                    
+                    tadsController = window.tads.init({
+                        widgetId: TADS_WIDGET_ID,
+                        type: "fullscreen",
+                        debug: TADS_IS_DEBUG,
+                        onShowReward: function(result) {
+                            console.log("✅ Tad.me ad completed, reward user:", result);
+                        }
+                    });
+                    
+                    await tadsController.showAd();
+                    console.log("✅ Tad.me ad completed successfully");
+                    giveBonus();
+                    
+                } else {
+                    console.log("❌ Tad.me controller not available");
+                    showMockAd();
+                }
+            } catch (error) {
+                console.log("❌ Tad.me ad error:", error);
+                showMockAd();
+            }
+        }
+        
+        function showMockAd() {
+            console.log("🎯 Showing mock ad...");
+            adsContainer.innerHTML = `
+                <div style="text-align: center; color: #2c3e50;">
+                    <i class="fas fa-gift" style="font-size: 40px; color: #ff6b6b;"></i>
+                    <div style="font-size: 16px; font-weight: 600; margin-top: 10px;">BONUS REWARD!</div>
+                    <div style="font-size: 12px; margin-top: 5px; color: #6c757d;">Thanks for playing!</div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                giveBonus();
+            }, 2000);
+        }
+        
+        function giveBonus() {
+            adsContainer.innerHTML = `
+                <div style="text-align: center; color: #2c3e50;">
+                    <i class="fas fa-trophy" style="font-size: 40px; color: #ffd700;"></i>
+                    <div style="font-size: 24px; font-weight: 800; color: #34c759; margin-top: 10px;">+50 BONUS</div>
+                    <div style="font-size: 14px; margin-top: 5px; color: #6c757d;">Points added to your balance!</div>
+                </div>
+            `;
+            
+            points += 50;
+            updatePoints();
+            closeAdsBtn.style.display = 'flex';
+        }
+        
+        function closeAds() {
+            playSound(clickSound);
+            adsPopup.style.display = 'none';
+        }
+        
+        // ===== INITIALIZE GAME =====
+        function initGame() {
+            updatePoints();
+            
+            // Event listeners
+            rollBtn.addEventListener('click', rollDice);
+            claimBtn.addEventListener('click', claimPrize);
+            closeAdsBtn.addEventListener('click', closeAds);
+            audioControl.addEventListener('click', toggleAudio);
+            
+            // Close popups on overlay click
+            resultPopup.addEventListener('click', function(e) {
+                if (e.target === this) this.style.display = 'none';
+            });
+            
+            adsPopup.addEventListener('click', function(e) {
+                if (e.target === this) closeAds();
+            });
+            
+            // Audio setup
+            diceSound.volume = 0.6;
+            winSound.volume = 0.7;
+            clickSound.volume = 0.5;
+            
+            console.log("🎮 Ludo Dice Game initialized");
+            console.log("💰 Points:", points);
+            console.log("📱 RichAds:", richAdsLoaded ? "✅ Loaded" : "❌ Not available");
+            console.log("📱 Tad.me:", tadsLoaded ? "✅ Loaded" : "❌ Not available");
+            console.log("📱 TGB Ads:", tgbController ? "✅ Loaded" : "❌ Not available");
+        }
+        
+        // Start game
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
 </body>
 </html>
