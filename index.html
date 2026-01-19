@@ -281,6 +281,19 @@
             position: absolute;
             left: 0;
         }
+        
+        .ad-loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .ad-mock {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -328,7 +341,7 @@
     <div class="popup-overlay" id="adsPopup">
         <div class="popup">
             <h3>🎁 BONUS REWARD</h3>
-            <div id="adsContainer" style="margin: 20px 0; color: #aaa; min-height: 100px;">
+            <div id="adsContainer" class="ad-loading">
                 <div class="spinner"></div>
                 <p>Loading your bonus reward...</p>
             </div>
@@ -408,26 +421,40 @@
                         debug: false
                     });
 
+                    // Set up Adexium event listeners
                     adexiumAds.on('adReceived', (ad) => {
                         console.log('Adexium ad received');
-                        elements.adsContainer.innerHTML = '<p>Ad loaded successfully</p>';
-                        adexiumAds.displayAd(ad);
-                    });
-
-                    adexiumAds.on('noAdFound', () => {
-                        console.log('No Adexium ad found');
-                        showMockAd();
+                        if (window.isShowingAdexiumInterstitial) {
+                            adexiumAds.displayAd(ad);
+                        }
                     });
 
                     adexiumAds.on('adClosed', () => {
                         console.log('Adexium ad closed');
-                        giveBonus();
+                        if (window.isShowingAdexiumInterstitial) {
+                            window.isShowingAdexiumInterstitial = false;
+                            // Show bonus after ad closed
+                            setTimeout(showBonusContent, 500);
+                        }
+                    });
+
+                    adexiumAds.on('noAdFound', () => {
+                        console.log('No Adexium ad found');
+                        if (window.isShowingAdexiumInterstitial) {
+                            window.isShowingAdexiumInterstitial = false;
+                            showMockAd();
+                        }
                     });
 
                     adexiumAds.on('error', (error) => {
                         console.error('Adexium error:', error);
-                        showMockAd();
+                        if (window.isShowingAdexiumInterstitial) {
+                            window.isShowingAdexiumInterstitial = false;
+                            showMockAd();
+                        }
                     });
+                    
+                    console.log('Adexium initialized successfully');
                 }
             } catch (error) {
                 console.warn('Adexium initialization failed:', error);
@@ -494,48 +521,79 @@
             updatePoints();
             elements.resultPopup.style.display = 'none';
             
-            // Show bonus ad after delay
-            setTimeout(showBonusAds, 500);
+            // Show Adexium interstitial ad
+            showAdexiumInterstitialAd();
         }
 
-        // ================== BONUS ADS FUNCTIONS ==================
-        function showBonusAds() {
+        // ================== ADEXIUM INTERSTITIAL AD ==================
+        function showAdexiumInterstitialAd() {
+            console.log('Showing Adexium interstitial ad');
+            
+            // Set flag to track ad showing
+            window.isShowingAdexiumInterstitial = true;
+            
+            // Show the ads popup
             elements.adsPopup.style.display = 'flex';
             elements.closeAdsBtn.style.display = 'none';
             elements.adsContainer.innerHTML = `
-                <div class="spinner"></div>
-                <p>Loading your bonus reward...</p>
+                <div class="ad-loading">
+                    <div class="spinner"></div>
+                    <p>Loading ad...</p>
+                </div>
             `;
-
-            // Try RichAds first
-            if (richAdsLoaded && window.TelegramAdsController) {
-                try {
-                    TelegramAdsController.showAd();
-                    setTimeout(giveBonus, 5000);
-                    return;
-                } catch (error) {
-                    console.warn('RichAds show failed:', error);
-                }
-            }
-
-            // Try Adexium
+            
+            // Try to request and show Adexium interstitial ad
             if (adexiumAds) {
                 try {
+                    console.log('Requesting Adexium interstitial ad');
                     adexiumAds.requestAd('interstitial');
+                    
+                    // Set timeout in case ad doesn't load
+                    setTimeout(() => {
+                        if (window.isShowingAdexiumInterstitial) {
+                            console.log('Adexium ad timeout, showing mock ad');
+                            window.isShowingAdexiumInterstitial = false;
+                            showMockAd();
+                        }
+                    }, 5000);
+                    
                 } catch (error) {
-                    console.warn('Adexium request failed:', error);
+                    console.error('Error requesting Adexium ad:', error);
+                    window.isShowingAdexiumInterstitial = false;
                     showMockAd();
                 }
             } else {
+                console.log('Adexium not available, showing mock ad');
+                window.isShowingAdexiumInterstitial = false;
                 showMockAd();
             }
         }
 
-        function giveBonus() {
+        function showMockAd() {
             elements.adsContainer.innerHTML = `
-                <div style="font-size:3rem;color:#34c759;margin:10px 0">🎁</div>
-                <h3 style="color:#34c759">+50 BONUS POINTS!</h3>
-                <p>Bonus points have been added to your balance</p>
+                <div class="ad-mock">
+                    <h4 style="color:#ffd700;margin-bottom:10px;">🎁 BONUS REWARD</h4>
+                    <p style="color:#aaa;margin-bottom:15px;">Watch this ad to earn 50 bonus points!</p>
+                    <div style="background:linear-gradient(135deg, #3390ec 0%, #2371c0 100%);color:white;padding:12px;border-radius:8px;margin-top:10px;cursor:pointer;transition:transform 0.2s;"
+                         onclick="this.style.transform='scale(0.98)'; setTimeout(() => { this.style.transform='scale(1)'; simulateAdComplete(); }, 200);">
+                        <i class="fas fa-play-circle"></i> Watch Ad
+                    </div>
+                    <p style="font-size:0.8rem;color:#888;margin-top:10px;">Click the button above to simulate watching an ad</p>
+                </div>
+            `;
+        }
+
+        function simulateAdComplete() {
+            showBonusContent();
+        }
+
+        function showBonusContent() {
+            elements.adsContainer.innerHTML = `
+                <div style="text-align:center; padding:10px;">
+                    <div style="font-size:3rem;color:#34c759;margin:10px 0">🎁</div>
+                    <h3 style="color:#34c759">+50 BONUS POINTS!</h3>
+                    <p>Bonus points have been added to your balance</p>
+                </div>
             `;
             
             points += 50;
@@ -543,25 +601,15 @@
             elements.closeAdsBtn.style.display = 'block';
         }
 
-        function showMockAd() {
-            elements.adsContainer.innerHTML = `
-                <div style="background:rgba(0,0,0,0.2);padding:20px;border-radius:10px;margin:20px 0;">
-                    <h4 style="color:#ffd700;margin-bottom:10px;">Sponsored Content</h4>
-                    <p style="color:#aaa;">Try our other amazing games!</p>
-                    <div style="background:#3390ec;color:white;padding:10px;border-radius:8px;margin-top:10px;cursor:pointer;"
-                         onclick="this.style.background='#2371c0'; setTimeout(() => { this.style.background='#3390ec'; giveBonus(); }, 1000);">
-                        Click to continue
-                    </div>
-                </div>
-            `;
+        function closeAdsPopup() {
+            elements.adsPopup.style.display = 'none';
+            window.isShowingAdexiumInterstitial = false;
         }
 
         // ================== EVENT LISTENERS ==================
         elements.rollBtn.addEventListener('click', rollDice);
         elements.claimBtn.addEventListener('click', claimPrize);
-        elements.closeAdsBtn.addEventListener('click', () => {
-            elements.adsPopup.style.display = 'none';
-        });
+        elements.closeAdsBtn.addEventListener('click', closeAdsPopup);
 
         // Close popups when clicking outside
         document.addEventListener('click', (e) => {
@@ -569,7 +617,9 @@
                 elements.resultPopup.style.display = 'none';
             }
             if (e.target === elements.adsPopup) {
-                elements.adsPopup.style.display = 'none';
+                if (!window.isShowingAdexiumInterstitial) {
+                    closeAdsPopup();
+                }
             }
         });
 
@@ -581,6 +631,9 @@
             
             // Initialize with a dice emoji
             elements.diceResult.textContent = getDiceEmoji(1);
+            
+            // Initialize ad showing flag
+            window.isShowingAdexiumInterstitial = false;
         }
 
         // Start when DOM is loaded
