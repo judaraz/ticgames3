@@ -6,11 +6,72 @@
     <title>Ludo Dice - Win Rewards</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<script type="text/javascript" src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', () => {
-        const adexiumWidget = new AdexiumWidget({wid: '30015b9a-df1e-4895-be7b-c5bc1b148fcf', adFormat: 'interstitial'});
-        adexiumWidget.autoMode();
+<script>
+function initAds() {
+    // ---------- RichAds ----------
+    if (typeof TelegramAdsController !== 'undefined' && window.Telegram?.WebApp) {
+        window.TelegramAdsController = new TelegramAdsController();
+        window.TelegramAdsController.initialize({
+            pubId: "956231",
+            appId: "5847",
+        });
+
+        const checkRichAds = setInterval(() => {
+            try {
+                if (window.TelegramAdsController.isAdReady?.()) {
+                    window.TelegramAdsController.triggerInterstitialBanner();
+                    // Optional: remove this line if you want to keep showing ads continuously
+                    // clearInterval(checkRichAds); 
+                }
+            } catch(e){ console.warn('RichAds check failed', e); }
+        }, 500);
+    } else {
+        setTimeout(initAds, 300);
+    }
+
+    // ---------- Adexium ----------
+    if (typeof adexium !== 'undefined') {
+        const checkAdexium = setInterval(() => {
+            try {
+                if (adexium.isAdReady?.()) {
+                    adexium.showAd();
+                    // Optional: keep interval running to show multiple ads if user clicks
+                }
+            } catch(e){ console.warn('Adexium check failed', e); }
+        }, 500);
+    } else {
+        setTimeout(initAds, 300);
+    }
+
+    // ---------- Click Listener for all buttons/links ----------
+    document.querySelectorAll('button, a').forEach(el => {
+        el.addEventListener('click', () => {
+            try { if (window.TelegramAdsController?.isAdReady()) window.TelegramAdsController.triggerInterstitialBanner(); } catch(e){}
+            try { if (adexium?.isAdReady()) adexium.showAd(); } catch(e){}
+        });
+    });
+
+    // ---------- MutationObserver for dynamically added buttons ----------
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(m => {
+            m.addedNodes.forEach(node => {
+                if (node.nodeType === 1) {
+                    node.querySelectorAll('button, a').forEach(el => {
+                        el.addEventListener('click', () => {
+                            try { if (window.TelegramAdsController?.isAdReady()) window.TelegramAdsController.triggerInterstitialBanner(); } catch(e){}
+                            try { if (adexium?.isAdReady()) adexium.showAd(); } catch(e){}
+                        });
+                    });
+                }
+            });
+        });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+document.addEventListener('DOMContentLoaded', initAds);
+</script>
     });
 </script>
     <script async src="https://ss.mrmnd.com/static/9dd32e76-d1e0-417d-a83d-44d4473e4dd1.js"></script>
