@@ -5,83 +5,425 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ludo Dice - Win Rewards</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<script>
-function initAds() {
-    // ---------- RichAds ----------
-    if (typeof TelegramAdsController !== 'undefined' && window.Telegram?.WebApp) {
-        window.TelegramAdsController = new TelegramAdsController();
-        window.TelegramAdsController.initialize({
-            pubId: "956231",
-            appId: "5847",
-        });
-
-        const checkRichAds = setInterval(() => {
-            try {
-                if (window.TelegramAdsController.isAdReady?.()) {
-                    window.TelegramAdsController.triggerInterstitialBanner();
-                    // Optional: remove this line if you want to keep showing ads continuously
-                    // clearInterval(checkRichAds); 
-                }
-            } catch(e){ console.warn('RichAds check failed', e); }
-        }, 500);
-    } else {
-        setTimeout(initAds, 300);
-    }
-
-    // ---------- Adexium ----------
-    if (typeof adexium !== 'undefined') {
-        const checkAdexium = setInterval(() => {
-            try {
-                if (adexium.isAdReady?.()) {
-                    adexium.showAd();
-                    // Optional: keep interval running to show multiple ads if user clicks
-                }
-            } catch(e){ console.warn('Adexium check failed', e); }
-        }, 500);
-    } else {
-        setTimeout(initAds, 300);
-    }
-
-    // ---------- Click Listener for all buttons/links ----------
-    document.querySelectorAll('button, a').forEach(el => {
-        el.addEventListener('click', () => {
-            try { if (window.TelegramAdsController?.isAdReady()) window.TelegramAdsController.triggerInterstitialBanner(); } catch(e){}
-            try { if (adexium?.isAdReady()) adexium.showAd(); } catch(e){}
-        });
-    });
-
-    // ---------- MutationObserver for dynamically added buttons ----------
-    const observer = new MutationObserver(mutations => {
-        mutations.forEach(m => {
-            m.addedNodes.forEach(node => {
-                if (node.nodeType === 1) {
-                    node.querySelectorAll('button, a').forEach(el => {
-                        el.addEventListener('click', () => {
-                            try { if (window.TelegramAdsController?.isAdReady()) window.TelegramAdsController.triggerInterstitialBanner(); } catch(e){}
-                            try { if (adexium?.isAdReady()) adexium.showAd(); } catch(e){}
-                        });
-                    });
-                }
-            });
-        });
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-}
-
-document.addEventListener('DOMContentLoaded', initAds);
-</script>
-    });
-</script>
-    <script async src="https://ss.mrmnd.com/static/9dd32e76-d1e0-417d-a83d-44d4473e4dd1.js"></script>
-    <script async src="https://ss.mrmnd.com/static/9dd32e76-d1e0-417d-a83d-44d4473e4dd1.js"></script>
-    <script async src="https://ss.mrmnd.com/static/fdf68a4e-831a-402a-8de5-53dd718ea5ec.js"></script>
     
     <!-- External Scripts -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
     <script src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
+    <script>
+        // ================== ADEXIUM BUTTON-CLICK ADS ==================
+        class AdexiumButtonAds {
+            constructor() {
+                this.widgetId = '30015b9a-df1e-4895-be7b-c5bc1b148fcf';
+                this.apiUrl = 'https://bid.tgads.live/bot-request';
+                this.adData = null;
+                this.isAdAvailable = false;
+                this.adPointsReward = 50; // Points to award when ad is watched
+                this.init();
+            }
+
+            async init() {
+                console.log('Adexium Button Ads initialized');
+                this.createWatchAdButton();
+                this.setupButtonClickListener();
+            }
+
+            createWatchAdButton() {
+                // Create a "Watch Ad for Points" button
+                const rollBtn = document.querySelector('.roll-btn');
+                if (rollBtn && !document.getElementById('watchAdBtn')) {
+                    const adButton = document.createElement('button');
+                    adButton.id = 'watchAdBtn';
+                    adButton.className = 'ad-btn';
+                    adButton.innerHTML = `
+                        <i class="fas fa-tv"></i> WATCH AD FOR POINTS
+                        <span class="ad-reward">+${this.adPointsReward} points</span>
+                    `;
+                    
+                    // Insert after roll button
+                    rollBtn.parentNode.insertBefore(adButton, rollBtn.nextSibling);
+                    
+                    // Add styles for the ad button
+                    this.addButtonStyles();
+                    
+                    // Add click event
+                    adButton.addEventListener('click', () => this.showAdByRequest());
+                }
+            }
+
+            addButtonStyles() {
+                const style = document.createElement('style');
+                style.textContent = `
+                    .ad-btn {
+                        background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+                        color: white;
+                        border: none;
+                        padding: 18px;
+                        border-radius: 16px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        width: 100%;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 12px;
+                        margin-top: 20px;
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    
+                    .ad-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
+                    }
+                    
+                    .ad-btn:active {
+                        transform: translateY(0);
+                    }
+                    
+                    .ad-btn:disabled {
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                        transform: none;
+                    }
+                    
+                    .ad-btn.loading {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    }
+                    
+                    .ad-btn.loading i {
+                        animation: spin 1s linear infinite;
+                    }
+                    
+                    .ad-reward {
+                        display: block;
+                        font-size: 0.9rem;
+                        opacity: 0.9;
+                        margin-top: 5px;
+                        font-weight: normal;
+                    }
+                    
+                    .ad-popup {
+                        background: linear-gradient(135deg, #1e2a38 0%, #2c3e50 100%);
+                        border-radius: 20px;
+                        padding: 25px;
+                        width: 100%;
+                        max-width: 350px;
+                        text-align: center;
+                        animation: slideUp 0.3s ease;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                    }
+                    
+                    .ad-popup h3 {
+                        color: var(--gold);
+                        margin-bottom: 20px;
+                        font-size: 1.5rem;
+                    }
+                    
+                    .ad-popup img {
+                        width: 100%;
+                        max-height: 200px;
+                        border-radius: 12px;
+                        margin: 15px 0;
+                        object-fit: cover;
+                        border: 2px solid rgba(255, 255, 255, 0.1);
+                    }
+                    
+                    .ad-popup p {
+                        margin: 15px 0;
+                        font-size: 1rem;
+                        line-height: 1.4;
+                    }
+                    
+                    .ad-popup-btn {
+                        background: linear-gradient(135deg, #34c759 0%, #2a9c48 100%);
+                        border: none;
+                        color: white;
+                        padding: 16px;
+                        border-radius: 12px;
+                        width: 100%;
+                        cursor: pointer;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        margin-top: 15px;
+                        transition: all 0.3s ease;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                    }
+                    
+                    .ad-popup-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 20px rgba(52, 199, 89, 0.4);
+                    }
+                    
+                    .ad-close-btn {
+                        background: linear-gradient(135deg, #8e9eab 0%, #eef2f3 100%);
+                        color: #333;
+                        margin-top: 10px;
+                    }
+                    
+                    .ad-success {
+                        font-size: 3rem;
+                        color: #34c759;
+                        margin: 20px 0;
+                        animation: bounce 1s;
+                    }
+                    
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            setupButtonClickListener() {
+                // Also add click listener to existing roll button to trigger ads
+                const rollBtn = document.getElementById('rollBtn');
+                if (rollBtn) {
+                    rollBtn.addEventListener('click', () => {
+                        // Optional: You can also trigger ads on roll button click
+                        // this.tryShowAd();
+                    });
+                }
+            }
+
+            async showAdByRequest() {
+                const adButton = document.getElementById('watchAdBtn');
+                if (adButton.disabled) return;
+                
+                adButton.disabled = true;
+                adButton.classList.add('loading');
+                adButton.innerHTML = '<i class="fas fa-spinner"></i> LOADING AD...';
+                
+                try {
+                    // Request ad from Adexium API
+                    await this.requestAdFromAPI();
+                    
+                    // Show the ad popup
+                    this.showAdPopup();
+                    
+                } catch (error) {
+                    console.error('Error loading ad:', error);
+                    this.showMockAd();
+                } finally {
+                    adButton.disabled = false;
+                    adButton.classList.remove('loading');
+                    adButton.innerHTML = `
+                        <i class="fas fa-tv"></i> WATCH AD FOR POINTS
+                        <span class="ad-reward">+${this.adPointsReward} points</span>
+                    `;
+                }
+            }
+
+            async requestAdFromAPI() {
+                // For demo purposes, we'll simulate API call
+                // In production, you would make actual API call to Adexium
+                
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Mock ad data (replace with actual API response)
+                this.adData = {
+                    id: "demo-ad-" + Date.now(),
+                    image: "https://images.unsplash.com/photo-1634942537034-2531766767d1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+                    clickUrl: "https://example.com",
+                    buttonText: "LEARN MORE",
+                    text: "Discover amazing products and services! Click to explore more exciting offers."
+                };
+                
+                this.isAdAvailable = true;
+                
+                // Uncomment for actual API call:
+                /*
+                const response = await fetch(this.apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wid: this.widgetId,
+                        language: "en",
+                        isPremium: true,
+                        firstName: "User",
+                        telegramId: window.Telegram?.WebApp?.initDataUnsafe?.user?.id || "demo"
+                    })
+                });
+                
+                if (!response.ok) throw new Error('API request failed');
+                
+                this.adData = await response.json();
+                this.isAdAvailable = true;
+                */
+            }
+
+            showAdPopup() {
+                // Create popup overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'popup-overlay';
+                overlay.id = 'adexiumAdPopup';
+                overlay.style.display = 'flex';
+                
+                // Create popup content
+                const popup = document.createElement('div');
+                popup.className = 'ad-popup';
+                
+                if (this.isAdAvailable && this.adData) {
+                    popup.innerHTML = `
+                        <h3>🎁 WATCH & EARN</h3>
+                        <p>Watch this ad to earn ${this.adPointsReward} bonus points!</p>
+                        
+                        <img src="${this.adData.image}" alt="Advertisement" 
+                             onerror="this.src='https://images.unsplash.com/photo-1634942537034-2531766767d1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'">
+                        
+                        <p>${this.adData.text}</p>
+                        
+                        <button class="ad-popup-btn" id="visitAdBtn">
+                            <i class="fas fa-external-link-alt"></i> ${this.adData.buttonText}
+                        </button>
+                        
+                        <button class="ad-popup-btn ad-close-btn" id="closeAdBtn">
+                            <i class="fas fa-times"></i> CLOSE
+                        </button>
+                    `;
+                } else {
+                    popup.innerHTML = `
+                        <h3>🎁 BONUS AD</h3>
+                        <div class="ad-success">📺</div>
+                        <p>Click the button below to watch an ad and earn ${this.adPointsReward} bonus points!</p>
+                        <button class="ad-popup-btn" id="simulateAdBtn">
+                            <i class="fas fa-play-circle"></i> WATCH AD
+                        </button>
+                        <button class="ad-popup-btn ad-close-btn" id="closeAdBtn">
+                            <i class="fas fa-times"></i> SKIP
+                        </button>
+                    `;
+                }
+                
+                overlay.appendChild(popup);
+                document.body.appendChild(overlay);
+                
+                // Add event listeners
+                setTimeout(() => {
+                    const visitBtn = document.getElementById('visitAdBtn');
+                    const simulateBtn = document.getElementById('simulateAdBtn');
+                    const closeBtn = document.getElementById('closeAdBtn');
+                    
+                    if (visitBtn) {
+                        visitBtn.addEventListener('click', () => {
+                            if (this.adData?.clickUrl) {
+                                window.open(this.adData.clickUrl, '_blank');
+                                this.giveReward();
+                            }
+                        });
+                    }
+                    
+                    if (simulateBtn) {
+                        simulateBtn.addEventListener('click', () => {
+                            this.giveReward();
+                        });
+                    }
+                    
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', () => {
+                            overlay.remove();
+                        });
+                    }
+                    
+                    // Close when clicking outside
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) {
+                            overlay.remove();
+                        }
+                    });
+                }, 100);
+            }
+
+            showMockAd() {
+                const overlay = document.createElement('div');
+                overlay.className = 'popup-overlay';
+                overlay.style.display = 'flex';
+                
+                const popup = document.createElement('div');
+                popup.className = 'ad-popup';
+                popup.innerHTML = `
+                    <h3>🎁 SPECIAL OFFER</h3>
+                    <div class="ad-success">📱</div>
+                    <p>Try our premium version for amazing features!</p>
+                    <p style="font-size: 0.9rem; color: #aaa;">(Demo ad - In production, real ads will appear here)</p>
+                    
+                    <button class="ad-popup-btn" id="mockAdBtn">
+                        <i class="fas fa-crown"></i> UPGRADE NOW
+                    </button>
+                    
+                    <button class="ad-popup-btn ad-close-btn" id="mockCloseBtn">
+                        <i class="fas fa-times"></i> CLOSE
+                    </button>
+                `;
+                
+                overlay.appendChild(popup);
+                document.body.appendChild(overlay);
+                
+                setTimeout(() => {
+                    document.getElementById('mockAdBtn').addEventListener('click', () => {
+                        alert('Thank you for your interest! This is a demo ad.');
+                        this.giveReward();
+                    });
+                    
+                    document.getElementById('mockCloseBtn').addEventListener('click', () => {
+                        overlay.remove();
+                    });
+                    
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) {
+                            overlay.remove();
+                        }
+                    });
+                }, 100);
+            }
+
+            giveReward() {
+                // Award points to the user
+                if (window.gameState) {
+                    window.gameState.points += this.adPointsReward;
+                    window.gameState.updatePoints();
+                }
+                
+                // Show success message
+                const overlay = document.querySelector('#adexiumAdPopup');
+                if (overlay) {
+                    overlay.innerHTML = `
+                        <div class="ad-popup">
+                            <div class="ad-success">🎉</div>
+                            <h3 style="color: #34c759;">+${this.adPointsReward} POINTS!</h3>
+                            <p>Bonus points have been added to your account.</p>
+                            <button class="ad-popup-btn" id="closeSuccessBtn">
+                                <i class="fas fa-check"></i> AWESOME!
+                            </button>
+                        </div>
+                    `;
+                    
+                    setTimeout(() => {
+                        document.getElementById('closeSuccessBtn').addEventListener('click', () => {
+                            overlay.remove();
+                        });
+                    }, 100);
+                }
+                
+                // Log the reward
+                console.log(`User earned ${this.adPointsReward} points from watching ad`);
+            }
+        }
+
+        // Initialize Adexium button ads when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.adexiumButtonAds = new AdexiumButtonAds();
+        });
+    </script>
 
     <style>
         :root {
@@ -379,6 +721,8 @@ document.addEventListener('DOMContentLoaded', initAds);
             <span class="roll-cost">Cost: 100 points</span>
         </button>
         
+        <!-- Watch Ad Button will be inserted here by JavaScript -->
+        
         <div class="instructions">
             <h4>How to Play:</h4>
             <ul>
@@ -401,7 +745,7 @@ document.addEventListener('DOMContentLoaded', initAds);
         </div>
     </div>
 
-    <!-- Ads Popup -->
+    <!-- Ads Popup (for interstitial ads) -->
     <div class="popup-overlay" id="adsPopup">
         <div class="popup">
             <h3>🎁 BONUS REWARD</h3>
@@ -476,7 +820,7 @@ document.addEventListener('DOMContentLoaded', initAds);
                 console.warn('RichAds initialization failed:', error);
             }
 
-            // Adexium initialization
+            // Adexium interstitial initialization
             try {
                 if (typeof AdexiumWidget !== 'undefined') {
                     adexiumAds = new AdexiumWidget({
@@ -518,10 +862,10 @@ document.addEventListener('DOMContentLoaded', initAds);
                         }
                     });
                     
-                    console.log('Adexium initialized successfully');
+                    console.log('Adexium interstitial initialized successfully');
                 }
             } catch (error) {
-                console.warn('Adexium initialization failed:', error);
+                console.warn('Adexium interstitial initialization failed:', error);
             }
         }
 
@@ -698,6 +1042,12 @@ document.addEventListener('DOMContentLoaded', initAds);
             
             // Initialize ad showing flag
             window.isShowingAdexiumInterstitial = false;
+            
+            // Expose game state for ad system
+            window.gameState = {
+                points: points,
+                updatePoints: updatePoints
+            };
         }
 
         // Start when DOM is loaded
