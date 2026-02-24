@@ -1,1395 +1,340 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ludo Dice Game - Earn Points from Ads</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neon Tic Tac Toe · English</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #1a1a2e;
+      --cell-bg: #16213e;
+      --border-color: #0f3460;
+      --x-color: #39b5e0;
+      --o-color: #e94560;
+      --winner-highlight: #50fa7b;
+      --text-color: #e0e0e0;
+    }
 
-<script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-          <script>
-            window.TelegramAdsController = new TelegramAdsController();
-            window.TelegramAdsController.initialize({
-              pubId: "956231",
-              appId: "5925",
-            });
-          </script>
-    <script type="text/javascript" src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', () => {
-        const adexiumWidget = new AdexiumWidget({wid: 'f2c903be-ac1d-4f6b-b0c7-8a281363517e', adFormat: 'interstitial'});
-        adexiumWidget.autoMode();
-    });
-</script>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
 
-    <script type="text/javascript" src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', () => {
-        const adexiumWidget = new AdexiumWidget({wid: 'd29f2549-2e28-4016-8b89-f36b11f66244', adFormat: 'bot message'});
-        adexiumWidget.autoMode();
-    });
-</script>
+    body {
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+      text-align: center;
+    }
 
+    .game-container {
+      max-width: 400px;
+      width: 100%;
+    }
 
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-            min-height: 100vh;
-            padding: 10px;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        
-        /* Header Styles */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .logo i {
-            font-size: 28px;
-            color: #ffcc00;
-        }
-        
-        .logo h1 {
-            font-size: 22px;
-            background: linear-gradient(90deg, #ffcc00, #ff9900);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        
-        .points-display {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 204, 0, 0.1);
-            padding: 10px 20px;
-            border-radius: 50px;
-            border: 2px solid rgba(255, 204, 0, 0.3);
-        }
-        
-        .points-display i {
-            color: #ffcc00;
-            font-size: 20px;
-        }
-        
-        .points-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #ffcc00;
-        }
-        
-        /* Game Area */
-        .game-area {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        /* Dice Area */
-        .dice-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 40px 30px;
-            border-radius: 20px;
-            margin: 10px 0;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .dice {
-            width: 150px;
-            height: 150px;
-            background: white;
-            border-radius: 25px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 80px;
-            color: #333;
-            margin-bottom: 40px;
-            cursor: pointer;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
-            transition: transform 0.3s;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .dice:hover {
-            transform: scale(1.05);
-        }
-        
-        .dice.rolling {
-            animation: rollDice 0.8s ease-in-out;
-        }
-        
-        @keyframes rollDice {
-            0% { transform: rotate(0deg) scale(1); }
-            25% { transform: rotate(90deg) scale(1.1); }
-            50% { transform: rotate(180deg) scale(1); }
-            75% { transform: rotate(270deg) scale(1.1); }
-            100% { transform: rotate(360deg) scale(1); }
-        }
-        
-        .dice-bg {
-            position: absolute;
-            font-size: 300px;
-            opacity: 0.05;
-            color: #ffcc00;
-            z-index: 1;
-        }
-        
-        .roll-btn {
-            background: linear-gradient(135deg, #ff3366, #ff0033);
-            color: white;
-            border: none;
-            padding: 18px 50px;
-            border-radius: 50px;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            z-index: 2;
-            box-shadow: 0 8px 20px rgba(255, 51, 102, 0.3);
-        }
-        
-        .roll-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(255, 51, 102, 0.5);
-        }
-        
-        .roll-btn:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        /* Stats Area */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-        
-        .stat-box {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .stat-box .value {
-            font-size: 36px;
-            font-weight: bold;
-            color: #ffcc00;
-            margin-bottom: 5px;
-        }
-        
-        .stat-box .label {
-            font-size: 14px;
-            color: #aaa;
-            text-align: center;
-        }
-        
-        /* Points from Ads */
-        .points-summary {
-            background: rgba(255, 204, 0, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 10px;
-            border: 2px solid rgba(255, 204, 0, 0.2);
-        }
-        
-        .points-summary h3 {
-            margin-bottom: 15px;
-            color: #ffcc00;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .points-breakdown {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: space-between;
-        }
-        
-        .points-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            min-width: 120px;
-        }
-        
-        .points-item .points {
-            font-size: 24px;
-            font-weight: bold;
-            color: #4CAF50;
-            margin-bottom: 5px;
-        }
-        
-        .points-item .label {
-            font-size: 13px;
-            color: #aaa;
-            text-align: center;
-        }
-        
-        /* Game History */
-        .history {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 10px;
-        }
-        
-        .history h3 {
-            margin-bottom: 15px;
-            color: #ffcc00;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .history-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            max-height: 150px;
-            overflow-y: auto;
-            padding: 5px;
-        }
-        
-        .history-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-size: 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-width: 80px;
-        }
-        
-        .history-value {
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-        
-        .history-time {
-            font-size: 12px;
-            color: #aaa;
-        }
-        
-        /* Ads Container */
-        .ads-container {
-            margin-top: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            padding: 20px;
-        }
-        
-        .ads-container h3 {
-            margin-bottom: 15px;
-            color: #ffcc00;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .ad-status {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .ad-status-item {
-            flex: 1;
-            min-width: 200px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .ad-status-icon {
-            font-size: 24px;
-        }
-        
-        .ad-status-text {
-            flex: 1;
-        }
-        
-        .ad-status-name {
-            font-weight: bold;
-            font-size: 14px;
-        }
-        
-        .ad-status-state {
-            font-size: 12px;
-            color: #aaa;
-        }
-        
-        .ad-status-success .ad-status-icon {
-            color: #4CAF50;
-        }
-        
-        .ad-status-error .ad-status-icon {
-            color: #F44336;
-        }
-        
-        .ad-status-loading .ad-status-icon {
-            color: #FF9800;
-        }
-        
-        .ads-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 15px;
-        }
-        
-        .ad-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .ad-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        
-        .ad-btn.watch-ad {
-            background: linear-gradient(135deg, #4CAF50, #2E7D32);
-            color: white;
-        }
-        
-        .ad-btn.retry {
-            background: rgba(255, 204, 0, 0.2);
-            color: #ffcc00;
-        }
-        
-        /* Ad Display Area */
-        .ad-display-area {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 15px;
-            text-align: center;
-            min-height: 180px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 2px dashed rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .ad-content {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-        }
-        
-        .ad-timer {
-            font-size: 14px;
-            color: #aaa;
-            margin-top: 10px;
-        }
-        
-        .ad-reward {
-            background: rgba(76, 175, 80, 0.2);
-            padding: 10px 20px;
-            border-radius: 10px;
-            margin-top: 15px;
-            display: inline-block;
-            border: 1px solid rgba(76, 175, 80, 0.4);
-        }
-        
-        /* Footer */
-        footer {
-            margin-top: 30px;
-            padding: 20px;
-            text-align: center;
-            color: #aaa;
-            font-size: 14px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Responsive */
-        @media (max-width: 600px) {
-            .dice {
-                width: 120px;
-                height: 120px;
-                font-size: 60px;
-            }
-            
-            .dice-bg {
-                font-size: 200px;
-            }
-            
-            .roll-btn {
-                padding: 15px 40px;
-                font-size: 18px;
-            }
-            
-            .stats-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .points-breakdown {
-                justify-content: center;
-            }
-            
-            .logo h1 {
-                font-size: 18px;
-            }
-            
-            .points-display {
-                padding: 8px 15px;
-            }
-            
-            .points-value {
-                font-size: 20px;
-            }
-        }
-        
-        /* Game Instructions */
-        .instructions {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            padding: 15px;
-            margin-top: 15px;
-            font-size: 14px;
-            color: #aaa;
-        }
-        
-        .instructions h4 {
-            color: #ffcc00;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .instructions-list {
-            list-style-type: none;
-            padding-left: 10px;
-        }
-        
-        .instructions-list li {
-            margin-bottom: 8px;
-            padding-left: 25px;
-            position: relative;
-        }
-        
-        .instructions-list li:before {
-            content: "•";
-            color: #ffcc00;
-            font-size: 20px;
-            position: absolute;
-            left: 0;
-            top: -3px;
-        }
-        
-        /* Points Animation */
-        .points-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            z-index: 1000;
-            border: 3px solid #ffcc00;
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.5);
-            animation: popupShow 0.5s ease-out;
-            display: none;
-        }
-        
-        @keyframes popupShow {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        }
-        
-        .points-popup h2 {
-            color: #ffcc00;
-            margin-bottom: 20px;
-            font-size: 28px;
-        }
-        
-        .points-earned {
-            font-size: 48px;
-            font-weight: bold;
-            color: #4CAF50;
-            margin: 20px 0;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        .close-popup {
-            background: #ff3366;
-            color: white;
-            border: none;
-            padding: 10px 30px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-    </style>
+    h1 {
+      font-size: clamp(1.5rem, 5vw, 2.5rem);
+      color: var(--x-color);
+      text-shadow: 0 0 8px var(--x-color), 0 0 16px var(--x-color);
+      margin-bottom: 1rem;
+    }
+
+    .scoreboard {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .status {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background-color: var(--border-color);
+      padding: 6px;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .cell {
+      background-color: var(--cell-bg);
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(2rem, 10vw, 3rem);
+      cursor: pointer;
+      transition: background-color 0.3s;
+      border-radius: 4px;
+    }
+
+    .cell.x {
+      color: var(--x-color);
+      text-shadow: 0 0 5px var(--x-color);
+    }
+
+    .cell.o {
+      color: var(--o-color);
+      text-shadow: 0 0 5px var(--o-color);
+    }
+
+    .cell.winner {
+      background-color: var(--winner-highlight) !important;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 1rem;
+      background: none;
+      border: 2px solid var(--border-color);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: var(--text-color);
+    }
+
+    button:hover {
+      box-shadow: 0 0 10px #fff;
+    }
+
+    .restart {
+      border-color: var(--x-color);
+      color: var(--x-color);
+    }
+
+    .restart:hover {
+      box-shadow: 0 0 8px var(--x-color);
+    }
+
+    .reset {
+      border-color: var(--o-color);
+      color: var(--o-color);
+    }
+
+    .reset:hover {
+      box-shadow: 0 0 8px var(--o-color);
+    }
+
+    /* Ad container: both ads stacked with spacing */
+    .ad-banner {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 1.2rem;
+      min-height: 140px;
+    }
+
+    .ad-banner > * {
+      max-width: 100%;
+      border-radius: 8px;
+    }
+
+    /* small debug/info note (optional, can be removed) */
+    .ad-note {
+      font-size: 0.7rem;
+      opacity: 0.5;
+      margin-top: 0.25rem;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                <i class="fas fa-dice"></i>
-                <h1>Ludo Dice - Earn Points</h1>
-            </div>
-            <div class="points-display">
-                <i class="fas fa-coins"></i>
-                <div>
-                    <div style="font-size: 12px; color: #aaa;">TOTAL POINTS</div>
-                    <div class="points-value" id="totalPoints">0</div>
-                </div>
-            </div>
-        </header>
-        
-        <!-- Game Area -->
-        <div class="game-area" id="gameArea">
-            <div class="dice-container">
-                <div class="dice-bg">⚄</div>
-                <div class="dice" id="dice">⚄</div>
-                <button class="roll-btn" id="rollBtn">
-                    <i class="fas fa-dice"></i> ROLL DICE
-                </button>
-            </div>
-            
-            <div class="stats-container">
-                <div class="stat-box">
-                    <div class="value" id="currentScore">0</div>
-                    <div class="label">CURRENT SCORE</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="highScore">0</div>
-                    <div class="label">HIGH SCORE</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="sessionRolls">0</div>
-                    <div class="label">ROLLS THIS SESSION</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="totalRolls">0</div>
-                    <div class="label">TOTAL ROLLS</div>
-                </div>
-            </div>
-            
-            <div class="points-summary">
-                <h3><i class="fas fa-coins"></i> POINTS FROM ADS</h3>
-                <div class="points-breakdown">
-                    <div class="points-item">
-                        <div class="points" id="pointsRichads">0</div>
-                        <div class="label">From Richads</div>
-                    </div>
-                    <div class="points-item">
-                        <div class="points" id="pointsAdexiumInterstitial">0</div>
-                        <div class="label">From Adexium Int.</div>
-                    </div>
-                    <div class="points-item">
-                        <div class="points" id="pointsAdexiumBot">0</div>
-                        <div class="label">From Adexium Bot</div>
-                    </div>
-                    <div class="points-item">
-                        <div class="points" id="pointsToday">0</div>
-                        <div class="label">Points Today</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="history">
-                <h3><i class="fas fa-history"></i> RECENT ROLLS & POINTS</h3>
-                <div class="history-list" id="historyList">
-                    <!-- History will appear here -->
-                </div>
-            </div>
-            
-            <div class="ads-container">
-                <h3><i class="fas fa-ad"></i> WATCH ADS TO EARN POINTS</h3>
-                
-                <div class="ad-status" id="adStatus">
-                    <!-- Ad status will be dynamically inserted here -->
-                </div>
-                
-                <div class="ad-display-area" id="adDisplay">
-                    <div class="ad-content" id="adContent">
-                        <p>Watch ads to earn bonus points!</p>
-                        <p style="font-size: 14px; color: #aaa; margin-top: 10px;">Points will be added after watching ads</p>
-                    </div>
-                </div>
-                
-                <div class="ads-controls">
-                    <button class="ad-btn watch-ad" id="watchRichadAd">
-                        <i class="fas fa-play-circle"></i> Watch Richad (+10)
-                    </button>
-                    <button class="ad-btn watch-ad" id="watchAdexiumInterstitial">
-                        <i class="fas fa-play-circle"></i> Watch Adexium Int. (+15)
-                    </button>
-                    <button class="ad-btn watch-ad" id="watchAdexiumBot">
-                        <i class="fas fa-play-circle"></i> Watch Adexium Bot (+20)
-                    </button>
-                    <button class="ad-btn retry" id="retryAllAds">
-                        <i class="fas fa-redo"></i> Retry All Ads
-                    </button>
-                </div>
-            </div>
-            
-            <div class="instructions">
-                <h4><i class="fas fa-info-circle"></i> HOW TO EARN POINTS</h4>
-                <ul class="instructions-list">
-                    <li><strong>Roll Dice:</strong> Earn 1 point per roll</li>
-                    <li><strong>Watch Richads:</strong> Earn 10 points after watching</li>
-                    <li><strong>Watch Adexium Interstitial:</strong> Earn 15 points after watching</li>
-                    <li><strong>Watch Adexium Bot Message:</strong> Earn 20 points after watching</li>
-                    <li><strong>Special Bonus:</strong> Earn 5 extra points for every 5th roll</li>
-                    <li><strong>Daily Limit:</strong> Max 200 points from ads per day</li>
-                </ul>
-            </div>
-        </div>
-        
-        <!-- Points Popup -->
-        <div class="points-popup" id="pointsPopup">
-            <h2><i class="fas fa-trophy"></i> POINTS EARNED!</h2>
-            <div id="popupMessage">You've earned bonus points!</div>
-            <div class="points-earned" id="pointsEarned">+10</div>
-            <div style="color: #aaa; margin-bottom: 20px;">Points have been added to your total</div>
-            <button class="close-popup" id="closePopup">CONTINUE PLAYING</button>
-        </div>
-        
-        <footer>
-            <p>Ludo Dice Game | Earn points by watching ads | Play and earn!</p>
-            <p>Points are awarded after watching complete ads</p>
-        </footer>
+  <div class="game-container">
+    <h1>Neon Tic Tac Toe</h1>
+    <div class="scoreboard">
+      <div>Player X: <span id="scoreX">0</span></div>
+      <div>Player O: <span id="scoreO">0</span></div>
+    </div>
+    <div class="status" id="status">Player X's turn</div>
+    <div class="board" id="board"></div>
+    <div class="buttons">
+      <button class="restart" onclick="restartGame()">Restart game</button>
+      <button class="reset" onclick="resetScore()">Reset score</button>
     </div>
 
-    <!-- Telegram SDK is already loaded in head -->
-    
-    <!-- Richads Script -->
-    <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-    
-    <!-- Adexium Scripts -->
-    <script type="text/javascript" src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
-    
-    <script>
-        // Initialize Telegram Web App (for mini-app compatibility)
-        const tg = window.Telegram?.WebApp || {};
-        
-        // Game state
-        const gameState = {
-            totalPoints: parseInt(localStorage.getItem('ludoTotalPoints')) || 0,
-            currentScore: 0,
-            highScore: parseInt(localStorage.getItem('ludoHighScore')) || 0,
-            sessionRolls: 0,
-            totalRolls: parseInt(localStorage.getItem('ludoTotalRolls')) || 0,
-            pointsFromRichads: parseInt(localStorage.getItem('ludoPointsRichads')) || 0,
-            pointsFromAdexiumInterstitial: parseInt(localStorage.getItem('ludoPointsAdexiumInterstitial')) || 0,
-            pointsFromAdexiumBot: parseInt(localStorage.getItem('ludoPointsAdexiumBot')) || 0,
-            pointsToday: parseInt(localStorage.getItem('ludoPointsToday')) || 0,
-            lastPointsDate: localStorage.getItem('ludoLastPointsDate') || '',
-            adsWatchedToday: parseInt(localStorage.getItem('ludoAdsWatchedToday')) || 0,
-            rollHistory: JSON.parse(localStorage.getItem('ludoRollHistory')) || [],
-            pointsHistory: JSON.parse(localStorage.getItem('ludoPointsHistory')) || [],
-            adsLoaded: {
-                richads: false,
-                adexiumInterstitial: false,
-                adexiumBot: false
-            },
-            adRetryCount: {
-                richads: 0,
-                adexiumInterstitial: 0,
-                adexiumBot: 0
-            }
-        };
-        
-        // Points values for each ad type
-        const POINTS_VALUES = {
-            RICHADS: 10,
-            ADEXIUM_INTERSTITIAL: 15,
-            ADEXIUM_BOT: 20,
-            ROLL_BONUS: 5  // Every 5th roll
-        };
-        
-        // Daily limits
-        const DAILY_LIMITS = {
-            MAX_POINTS_FROM_ADS: 200,
-            MAX_ADS_WATCHED: 10
-        };
-        
-        // DOM Elements
-        const dice = document.getElementById('dice');
-        const rollBtn = document.getElementById('rollBtn');
-        const totalPointsEl = document.getElementById('totalPoints');
-        const currentScoreEl = document.getElementById('currentScore');
-        const highScoreEl = document.getElementById('highScore');
-        const sessionRollsEl = document.getElementById('sessionRolls');
-        const totalRollsEl = document.getElementById('totalRolls');
-        const pointsRichadsEl = document.getElementById('pointsRichads');
-        const pointsAdexiumInterstitialEl = document.getElementById('pointsAdexiumInterstitial');
-        const pointsAdexiumBotEl = document.getElementById('pointsAdexiumBot');
-        const pointsTodayEl = document.getElementById('pointsToday');
-        const historyList = document.getElementById('historyList');
-        const adStatusEl = document.getElementById('adStatus');
-        const adDisplay = document.getElementById('adDisplay');
-        const adContent = document.getElementById('adContent');
-        const watchRichadAdBtn = document.getElementById('watchRichadAd');
-        const watchAdexiumInterstitialBtn = document.getElementById('watchAdexiumInterstitial');
-        const watchAdexiumBotBtn = document.getElementById('watchAdexiumBot');
-        const retryAllAdsBtn = document.getElementById('retryAllAds');
-        const pointsPopup = document.getElementById('pointsPopup');
-        const popupMessage = document.getElementById('popupMessage');
-        const pointsEarnedEl = document.getElementById('pointsEarned');
-        const closePopupBtn = document.getElementById('closePopup');
-        
-        // Dice faces (Unicode dice characters)
-        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-        
-        // Initialize the app
-        function initApp() {
-            // Expand the Telegram Web App to full height if available
-            if (tg.expand) {
-                tg.expand();
-            }
-            
-            // Check if we need to reset daily points
-            checkDailyReset();
-            
-            // Update UI with saved data
-            updateGameStats();
-            
-            // Render history
-            renderHistory();
-            
-            // Initialize ads
-            initializeAds();
-            
-            // Update ad status display
-            updateAdStatusDisplay();
-        }
-        
-        // Check if daily points need to be reset
-        function checkDailyReset() {
-            const today = new Date().toDateString();
-            
-            if (gameState.lastPointsDate !== today) {
-                gameState.pointsToday = 0;
-                gameState.adsWatchedToday = 0;
-                gameState.lastPointsDate = today;
-                
-                localStorage.setItem('ludoPointsToday', gameState.pointsToday);
-                localStorage.setItem('ludoAdsWatchedToday', gameState.adsWatchedToday);
-                localStorage.setItem('ludoLastPointsDate', gameState.lastPointsDate);
-            }
-        }
-        
-        // Update game statistics display
-        function updateGameStats() {
-            totalPointsEl.textContent = gameState.totalPoints;
-            currentScoreEl.textContent = gameState.currentScore;
-            highScoreEl.textContent = gameState.highScore;
-            sessionRollsEl.textContent = gameState.sessionRolls;
-            totalRollsEl.textContent = gameState.totalRolls;
-            pointsRichadsEl.textContent = gameState.pointsFromRichads;
-            pointsAdexiumInterstitialEl.textContent = gameState.pointsFromAdexiumInterstitial;
-            pointsAdexiumBotEl.textContent = gameState.pointsFromAdexiumBot;
-            pointsTodayEl.textContent = gameState.pointsToday;
-            
-            // Update button states based on daily limits
-            updateAdButtonsState();
-        }
-        
-        // Update ad buttons state based on daily limits
-        function updateAdButtonsState() {
-            const canWatchMoreAds = gameState.adsWatchedToday < DAILY_LIMITS.MAX_ADS_WATCHED;
-            const canEarnMorePoints = gameState.pointsToday < DAILY_LIMITS.MAX_POINTS_FROM_ADS;
-            
-            const isDisabled = !canWatchMoreAds || !canEarnMorePoints;
-            
-            watchRichadAdBtn.disabled = isDisabled;
-            watchAdexiumInterstitialBtn.disabled = isDisabled;
-            watchAdexiumBotBtn.disabled = isDisabled;
-            
-            if (isDisabled) {
-                watchRichadAdBtn.style.opacity = '0.5';
-                watchAdexiumInterstitialBtn.style.opacity = '0.5';
-                watchAdexiumBotBtn.style.opacity = '0.5';
-                
-                if (gameState.adsWatchedToday >= DAILY_LIMITS.MAX_ADS_WATCHED) {
-                    adContent.innerHTML = `<p style="color: #ff9900;">Daily ad limit reached (${DAILY_LIMITS.MAX_ADS_WATCHED} ads)</p>
-                                          <p style="font-size: 14px; color: #aaa;">Come back tomorrow to earn more points!</p>`;
-                } else if (gameState.pointsToday >= DAILY_LIMITS.MAX_POINTS_FROM_ADS) {
-                    adContent.innerHTML = `<p style="color: #ff9900;">Daily points limit reached (${DAILY_LIMITS.MAX_POINTS_FROM_ADS} points)</p>
-                                          <p style="font-size: 14px; color: #aaa;">Come back tomorrow to earn more points!</p>`;
-                }
-            } else {
-                watchRichadAdBtn.style.opacity = '1';
-                watchAdexiumInterstitialBtn.style.opacity = '1';
-                watchAdexiumBotBtn.style.opacity = '1';
-            }
-        }
-        
-        // Roll the dice
-        function rollDice() {
-            // Disable roll button during animation
-            rollBtn.disabled = true;
-            
-            // Add rolling animation
-            dice.classList.add('rolling');
-            
-            // Generate random dice result after animation
-            setTimeout(() => {
-                const diceValue = Math.floor(Math.random() * 6) + 1; // 1-6
-                
-                // Update dice display
-                dice.textContent = diceFaces[diceValue - 1];
-                dice.classList.remove('rolling');
-                
-                // Update game state
-                gameState.currentScore += diceValue;
-                gameState.sessionRolls++;
-                gameState.totalRolls++;
-                
-                // Add 1 point for rolling
-                addPoints(1, 'Dice Roll');
-                
-                // Check for roll bonus (every 5th roll)
-                if (gameState.sessionRolls % 5 === 0) {
-                    addPoints(POINTS_VALUES.ROLL_BONUS, '5th Roll Bonus');
-                }
-                
-                // Update high score if needed
-                if (gameState.currentScore > gameState.highScore) {
-                    gameState.highScore = gameState.currentScore;
-                    localStorage.setItem('ludoHighScore', gameState.highScore);
-                }
-                
-                // Save total rolls
-                localStorage.setItem('ludoTotalRolls', gameState.totalRolls);
-                
-                // Add to roll history
-                const now = new Date();
-                const rollTime = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                gameState.rollHistory.unshift({
-                    type: 'roll',
-                    value: diceValue,
-                    points: 1,
-                    time: rollTime,
-                    timestamp: now.getTime()
-                });
-                
-                // Keep only last 10 items
-                if (gameState.rollHistory.length > 10) {
-                    gameState.rollHistory = gameState.rollHistory.slice(0, 10);
-                }
-                
-                // Save history
-                localStorage.setItem('ludoRollHistory', JSON.stringify(gameState.rollHistory));
-                
-                // Update UI
-                updateGameStats();
-                renderHistory();
-                
-                // Re-enable roll button
-                rollBtn.disabled = false;
-                
-            }, 800);
-        }
-        
-        // Add points to the user's total
-        function addPoints(points, source) {
-            // Check daily limits for ad points
-            if (source.includes('Ad') && gameState.pointsToday + points > DAILY_LIMITS.MAX_POINTS_FROM_ADS) {
-                points = DAILY_LIMITS.MAX_POINTS_FROM_ADS - gameState.pointsToday;
-                if (points <= 0) return;
-            }
-            
-            // Update game state
-            gameState.totalPoints += points;
-            gameState.pointsToday += points;
-            
-            // Update specific ad points
-            if (source.includes('Richad')) {
-                gameState.pointsFromRichads += points;
-                localStorage.setItem('ludoPointsRichads', gameState.pointsFromRichads);
-            } else if (source.includes('Adexium Interstitial')) {
-                gameState.pointsFromAdexiumInterstitial += points;
-                localStorage.setItem('ludoPointsAdexiumInterstitial', gameState.pointsFromAdexiumInterstitial);
-            } else if (source.includes('Adexium Bot')) {
-                gameState.pointsFromAdexiumBot += points;
-                localStorage.setItem('ludoPointsAdexiumBot', gameState.pointsFromAdexiumBot);
-            }
-            
-            // Increment ads watched counter for ad points
-            if (source.includes('Ad')) {
-                gameState.adsWatchedToday++;
-                localStorage.setItem('ludoAdsWatchedToday', gameState.adsWatchedToday);
-            }
-            
-            // Save data
-            localStorage.setItem('ludoTotalPoints', gameState.totalPoints);
-            localStorage.setItem('ludoPointsToday', gameState.pointsToday);
-            localStorage.setItem('ludoLastPointsDate', new Date().toDateString());
-            
-            // Add to points history
-            const now = new Date();
-            const time = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            gameState.pointsHistory.unshift({
-                type: 'points',
-                source: source,
-                points: points,
-                time: time,
-                timestamp: now.getTime()
+    <!-- ========== AD INTEGRATION (RichAds + Adsterra) with persistent retry ========== -->
+    <div class="ad-banner">
+      <!-- RichAds container (always tries to load) -->
+      <div id="richads-container" style="min-width: 320px; min-height: 100px; background: #0b0f1a; display: flex; align-items: center; justify-content: center;"></div>
+      
+      <!-- Adsterra banner (original, unchanged) -->
+      <div>
+        <script type="text/javascript">
+          atOptions = {
+            'key' : '81cfa983e7ca47cc21902cb55674c554',
+            'format' : 'iframe',
+            'height' : 60,
+            'width' : 468,
+            'params' : {}
+          };
+        </script>
+        <script type="text/javascript" src="//www.highperformanceformat.com/81cfa983e7ca47cc21902cb55674c554/invoke.js"></script>
+      </div>
+    </div>
+    <!-- optional tiny note (not intrusive) -->
+    <div class="ad-note">▼ ads always retry</div>
+  </div>
+
+  <!-- RichAds core script (load once) -->
+  <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+
+  <script>
+    // --- PERSISTENT RichAds initialisation with retry on failure / adblock ---
+    (function initRichAds(containerId, pubId, appId, maxAttempts = 15) {
+      let attempts = 0;
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      function tryInit() {
+        attempts++;
+        // Check if controller is available and not previously failed fatally
+        if (window.TelegramAdsController && typeof window.TelegramAdsController.initialize === 'function') {
+          try {
+            // Clear container placeholder (optional, but helps if previous partial render)
+            container.innerHTML = ''; 
+            window.TelegramAdsController.initialize({
+              pubId: pubId,
+              appId: appId,
+              containerId: containerId  // ensures it renders inside the div
             });
-            
-            // Keep only last 10 items
-            if (gameState.pointsHistory.length > 10) {
-                gameState.pointsHistory = gameState.pointsHistory.slice(0, 10);
-            }
-            
-            localStorage.setItem('ludoPointsHistory', JSON.stringify(gameState.pointsHistory));
-            
-            // Show points popup for significant points
-            if (points >= 5) {
-                showPointsPopup(points, source);
-            }
-            
-            // Update UI
-            updateGameStats();
-            renderHistory();
+            console.log('✅ RichAds initialized (attempt #' + attempts + ')');
+            return true;
+          } catch (e) {
+            console.warn('⚠️ RichAds init error:', e);
+          }
+        } else {
+          console.warn('⏳ TelegramAdsController not ready (attempt #' + attempts + ')');
         }
-        
-        // Show points popup
-        function showPointsPopup(points, source) {
-            pointsEarnedEl.textContent = `+${points}`;
-            popupMessage.textContent = `You earned ${points} points from ${source}!`;
-            pointsPopup.style.display = 'block';
-            
-            // Auto close after 3 seconds
-            setTimeout(() => {
-                pointsPopup.style.display = 'none';
-            }, 3000);
+
+        // If not succeeded and attempts left, retry after delay (exponential backoff)
+        if (attempts < maxAttempts) {
+          const delay = Math.min(1000 * Math.pow(1.5, attempts), 10000); // up to 10s
+          setTimeout(tryInit, delay);
+        } else {
+          console.warn('❗ RichAds max attempts reached — likely blocked or unavailable.');
+          // Optionally show fallback message inside container
+          container.style.background = '#1e2434';
+          container.innerHTML = '<span style="color:#888; font-size:0.9rem;">ad space (retry later)</span>';
         }
-        
-        // Render combined history
-        function renderHistory() {
-            historyList.innerHTML = '';
-            
-            // Combine roll and points history, sort by timestamp
-            const combinedHistory = [...gameState.rollHistory, ...gameState.pointsHistory]
-                .sort((a, b) => b.timestamp - a.timestamp)
-                .slice(0, 8); // Show only 8 most recent items
-            
-            if (combinedHistory.length === 0) {
-                historyList.innerHTML = '<div style="color: #aaa; font-style: italic; padding: 20px; text-align: center; width: 100%;">No activity yet. Roll dice or watch ads to earn points!</div>';
-                return;
-            }
-            
-            combinedHistory.forEach(item => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-                
-                if (item.type === 'roll') {
-                    historyItem.innerHTML = `
-                        <div class="history-value">${diceFaces[item.value - 1]}</div>
-                        <div style="font-weight: bold; margin-bottom: 3px;">Roll: ${item.value}</div>
-                        <div style="font-size: 12px; color: #4CAF50;">+${item.points} point</div>
-                        <div class="history-time">${item.time}</div>
-                    `;
-                } else {
-                    // Points history
-                    const icon = item.source.includes('Richad') ? 'fa-ad' : 
-                                 item.source.includes('Adexium') ? 'fa-play-circle' : 
-                                 item.source.includes('Bonus') ? 'fa-gift' : 'fa-coins';
-                    
-                    historyItem.innerHTML = `
-                        <div class="history-value"><i class="fas ${icon}" style="color: #4CAF50;"></i></div>
-                        <div style="font-weight: bold; margin-bottom: 3px; font-size: 13px;">${item.source}</div>
-                        <div style="font-size: 12px; color: #4CAF50; font-weight: bold;">+${item.points} points</div>
-                        <div class="history-time">${item.time}</div>
-                    `;
-                }
-                
-                historyList.appendChild(historyItem);
-            });
+      }
+
+      // First attempt after a tiny delay to ensure script parsing
+      setTimeout(tryInit, 300);
+    })('richads-container', '956231', '6162', 20);  // increased attempts, retries for long time
+  </script>
+
+  <script>
+    // --- Tic Tac Toe Game Logic (all English text) ---
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const scoreXEl = document.getElementById('scoreX');
+    const scoreOEl = document.getElementById('scoreO');
+
+    let cells = [];
+    let currentPlayer = 'X';
+    let gameState = Array(9).fill(null);
+    let scores = { X: 0, O: 0 };
+    const winningCombos = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    function initBoard() {
+      boardEl.innerHTML = '';
+      cells = [];
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.addEventListener('click', () => handleMove(i));
+        boardEl.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+
+    function handleMove(index) {
+      if (gameState[index] || checkWinner()) return;
+      gameState[index] = currentPlayer;
+      cells[index].textContent = currentPlayer;
+      cells[index].classList.add(currentPlayer.toLowerCase());
+      
+      const winnerSymbol = checkWinner(); // also applies winner class
+      if (winnerSymbol) {
+        statusEl.textContent = `Player ${winnerSymbol} wins! 🎉`;
+        scores[winnerSymbol]++;
+        updateScores();
+      } else if (!gameState.includes(null)) {
+        statusEl.textContent = "It's a draw!";
+      } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        statusEl.textContent = `Player ${currentPlayer}'s turn`;
+      }
+    }
+
+    function checkWinner() {
+      for (const combo of winningCombos) {
+        const [a, b, c] = combo;
+        if (gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+          combo.forEach(i => cells[i].classList.add('winner'));
+          return gameState[a];
         }
-        
-        // Initialize ads
-        function initializeAds() {
-            // Initialize Richads
-            initializeRichads();
-            
-            // Initialize Adexium ads with delay
-            setTimeout(() => {
-                initializeAdexiumAds();
-            }, 1000);
-        }
-        
-        // Initialize Richads
-        function initializeRichads() {
-            try {
-                setAdStatus('richads', 'loading', 'Loading Richads...');
-                
-                if (typeof TelegramAdsController !== 'undefined') {
-                    window.TelegramAdsController = new TelegramAdsController();
-                    window.TelegramAdsController.initialize({
-                        pubId: "956231",
-                        appId: "5925",
-                    });
-                    
-                    gameState.adsLoaded.richads = true;
-                    setAdStatus('richads', 'success', 'Ready to watch (+10 points)');
-                    console.log('Richads initialized successfully');
-                } else {
-                    console.error('Richads script not loaded');
-                    setAdStatus('richads', 'error', 'Failed to load');
-                }
-            } catch (error) {
-                console.error('Error initializing Richads:', error);
-                setAdStatus('richads', 'error', 'Error loading');
-            }
-        }
-        
-        // Initialize Adexium ads
-        function initializeAdexiumAds() {
-            try {
-                // Interstitial ad
-                setAdStatus('adexiumInterstitial', 'loading', 'Loading Adexium Interstitial...');
-                
-                if (typeof AdexiumWidget !== 'undefined') {
-                    const adexiumWidgetInterstitial = new AdexiumWidget({
-                        wid: 'f2c903be-ac1d-4f6b-b0c7-8a281363517e', 
-                        adFormat: 'interstitial'
-                    });
-                    adexiumWidgetInterstitial.autoMode();
-                    gameState.adsLoaded.adexiumInterstitial = true;
-                    setAdStatus('adexiumInterstitial', 'success', 'Ready to watch (+15 points)');
-                    console.log('Adexium interstitial initialized successfully');
-                }
-                
-                // Bot message ad
-                setAdStatus('adexiumBot', 'loading', 'Loading Adexium Bot Message...');
-                
-                const adexiumWidgetBot = new AdexiumWidget({
-                    wid: 'd29f2549-2e28-4016-8b89-f36b11f66244', 
-                    adFormat: 'bot message'
-                });
-                adexiumWidgetBot.autoMode();
-                gameState.adsLoaded.adexiumBot = true;
-                setAdStatus('adexiumBot', 'success', 'Ready to watch (+20 points)');
-                console.log('Adexium bot message initialized successfully');
-                
-            } catch (error) {
-                console.error('Error initializing Adexium ads:', error);
-                if (!gameState.adsLoaded.adexiumInterstitial) {
-                    setAdStatus('adexiumInterstitial', 'error', 'Failed to load');
-                }
-                if (!gameState.adsLoaded.adexiumBot) {
-                    setAdStatus('adexiumBot', 'error', 'Failed to load');
-                }
-            }
-        }
-        
-        // Set ad status
-        function setAdStatus(adName, status, message) {
-            // Update game state
-            if (status === 'success') {
-                gameState.adsLoaded[adName] = true;
-            } else if (status === 'error') {
-                gameState.adsLoaded[adName] = false;
-            }
-            
-            // Update display
-            updateAdStatusDisplay();
-        }
-        
-        // Update ad status display
-        function updateAdStatusDisplay() {
-            adStatusEl.innerHTML = '';
-            
-            // Richads status
-            const richadsStatus = createAdStatusElement(
-                'richads', 
-                'Richads', 
-                gameState.adsLoaded.richads ? 'success' : 'error',
-                gameState.adsLoaded.richads ? 'Ready to watch (+10 points)' : 'Failed to load'
-            );
-            adStatusEl.appendChild(richadsStatus);
-            
-            // Adexium Interstitial status
-            const adexiumInterstitialStatus = createAdStatusElement(
-                'adexiumInterstitial', 
-                'Adexium Interstitial', 
-                gameState.adsLoaded.adexiumInterstitial ? 'success' : 'error',
-                gameState.adsLoaded.adexiumInterstitial ? 'Ready to watch (+15 points)' : 'Failed to load'
-            );
-            adStatusEl.appendChild(adexiumInterstitialStatus);
-            
-            // Adexium Bot status
-            const adexiumBotStatus = createAdStatusElement(
-                'adexiumBot', 
-                'Adexium Bot Message', 
-                gameState.adsLoaded.adexiumBot ? 'success' : 'error',
-                gameState.adsLoaded.adexiumBot ? 'Ready to watch (+20 points)' : 'Failed to load'
-            );
-            adStatusEl.appendChild(adexiumBotStatus);
-        }
-        
-        // Create ad status element
-        function createAdStatusElement(id, name, status, message) {
-            const div = document.createElement('div');
-            div.className = `ad-status-item ad-status-${status}`;
-            div.id = `adStatus-${id}`;
-            
-            let icon = 'fa-question-circle';
-            if (status === 'success') icon = 'fa-check-circle';
-            if (status === 'error') icon = 'fa-times-circle';
-            if (status === 'loading') icon = 'fa-spinner fa-spin';
-            
-            div.innerHTML = `
-                <div class="ad-status-icon">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <div class="ad-status-text">
-                    <div class="ad-status-name">${name}</div>
-                    <div class="ad-status-state">${message}</div>
-                </div>
-            `;
-            
-            return div;
-        }
-        
-        // Show ad simulation
-        function showAdSimulation(adType, points) {
-            const adTemplates = {
-                richads: {
-                    title: "📱 RICHADS ADVERTISEMENT 📱",
-                    message: "Thank you for watching this ad!",
-                    bgColor: "#2196F3"
-                },
-                adexiumInterstitial: {
-                    title: "🎮 ADEXIUM INTERSTITIAL 🎮",
-                    message: "Great offer just for you!",
-                    bgColor: "#4CAF50"
-                },
-                adexiumBot: {
-                    title: "🤖 ADEXIUM BOT MESSAGE 🤖",
-                    message: "Check out this special message!",
-                    bgColor: "#9C27B0"
-                }
-            };
-            
-            const ad = adTemplates[adType];
-            let seconds = 5;
-            
-            // Update ad display
-            adDisplay.style.background = `rgba(${hexToRgb(ad.bgColor)}, 0.2)`;
-            adDisplay.style.border = `2px solid ${ad.bgColor}`;
-            
-            // Show ad content
-            adContent.innerHTML = `
-                <h3 style="color: ${ad.bgColor}; margin-bottom: 15px;">${ad.title}</h3>
-                <p>${ad.message}</p>
-                <div class="ad-timer" id="adTimer">Ad completes in ${seconds} seconds...</div>
-                <div class="ad-reward" id="adReward" style="display: none;">
-                    <i class="fas fa-coins"></i> You earned ${points} points!
-                </div>
-            `;
-            
-            // Disable all ad buttons during ad
-            watchRichadAdBtn.disabled = true;
-            watchAdexiumInterstitialBtn.disabled = true;
-            watchAdexiumBotBtn.disabled = true;
-            rollBtn.disabled = true;
-            
-            // Start countdown timer
-            const timerInterval = setInterval(() => {
-                seconds--;
-                document.getElementById('adTimer').textContent = `Ad completes in ${seconds} seconds...`;
-                
-                if (seconds <= 0) {
-                    clearInterval(timerInterval);
-                    
-                    // Show reward
-                    document.getElementById('adReward').style.display = 'block';
-                    document.getElementById('adTimer').textContent = "Ad completed!";
-                    
-                    // Add points after ad
-                    setTimeout(() => {
-                        addPoints(points, `${adType === 'richads' ? 'Richad' : adType === 'adexiumInterstitial' ? 'Adexium Interstitial' : 'Adexium Bot'} Ad`);
-                        
-                        // Reset ad display
-                        setTimeout(() => {
-                            adDisplay.style.background = '';
-                            adDisplay.style.border = '';
-                            adContent.innerHTML = `<p>Watch another ad to earn more points!</p>
-                                                  <p style="font-size: 14px; color: #aaa;">You've watched ${gameState.adsWatchedToday}/${DAILY_LIMITS.MAX_ADS_WATCHED} ads today</p>`;
-                            
-                            // Re-enable buttons
-                            watchRichadAdBtn.disabled = false;
-                            watchAdexiumInterstitialBtn.disabled = false;
-                            watchAdexiumBotBtn.disabled = false;
-                            rollBtn.disabled = false;
-                            updateAdButtonsState();
-                        }, 1500);
-                    }, 1000);
-                }
-            }, 1000);
-        }
-        
-        // Helper function to convert hex to RGB
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? 
-                `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` 
-                : '0, 0, 0';
-        }
-        
-        // Event Listeners
-        rollBtn.addEventListener('click', rollDice);
-        
-        // Dice click also triggers roll
-        dice.addEventListener('click', () => {
-            if (!rollBtn.disabled) {
-                rollDice();
-            }
-        });
-        
-        // Watch ad buttons
-        watchRichadAdBtn.addEventListener('click', () => {
-            if (gameState.adsWatchedToday >= DAILY_LIMITS.MAX_ADS_WATCHED) {
-                alert(`Daily ad limit reached! You can watch only ${DAILY_LIMITS.MAX_ADS_WATCHED} ads per day.`);
-                return;
-            }
-            
-            if (gameState.pointsToday >= DAILY_LIMITS.MAX_POINTS_FROM_ADS) {
-                alert(`Daily points limit reached! You can earn only ${DAILY_LIMITS.MAX_POINTS_FROM_ADS} points from ads per day.`);
-                return;
-            }
-            
-            showAdSimulation('richads', POINTS_VALUES.RICHADS);
-        });
-        
-        watchAdexiumInterstitialBtn.addEventListener('click', () => {
-            if (gameState.adsWatchedToday >= DAILY_LIMITS.MAX_ADS_WATCHED) {
-                alert(`Daily ad limit reached! You can watch only ${DAILY_LIMITS.MAX_ADS_WATCHED} ads per day.`);
-                return;
-            }
-            
-            if (gameState.pointsToday >= DAILY_LIMITS.MAX_POINTS_FROM_ADS) {
-                alert(`Daily points limit reached! You can earn only ${DAILY_LIMITS.MAX_POINTS_FROM_ADS} points from ads per day.`);
-                return;
-            }
-            
-            showAdSimulation('adexiumInterstitial', POINTS_VALUES.ADEXIUM_INTERSTITIAL);
-        });
-        
-        watchAdexiumBotBtn.addEventListener('click', () => {
-            if (gameState.adsWatchedToday >= DAILY_LIMITS.MAX_ADS_WATCHED) {
-                alert(`Daily ad limit reached! You can watch only ${DAILY_LIMITS.MAX_ADS_WATCHED} ads per day.`);
-                return;
-            }
-            
-            if (gameState.pointsToday >= DAILY_LIMITS.MAX_POINTS_FROM_ADS) {
-                alert(`Daily points limit reached! You can earn only ${DAILY_LIMITS.MAX_POINTS_FROM_ADS} points from ads per day.`);
-                return;
-            }
-            
-            showAdSimulation('adexiumBot', POINTS_VALUES.ADEXIUM_BOT);
-        });
-        
-        // Retry all ads button
-        retryAllAdsBtn.addEventListener('click', () => {
-            adContent.innerHTML = '<p>Retrying all ads... Please wait.</p>';
-            
-            // Reset ad status
-            gameState.adsLoaded.richads = false;
-            gameState.adsLoaded.adexiumInterstitial = false;
-            gameState.adsLoaded.adexiumBot = false;
-            
-            updateAdStatusDisplay();
-            
-            // Reinitialize ads
-            setTimeout(() => {
-                initializeAds();
-                adContent.innerHTML = '<p>Ads retried! Try watching ads to earn points.</p>';
-            }, 1500);
-        });
-        
-        // Close points popup
-        closePopupBtn.addEventListener('click', () => {
-            pointsPopup.style.display = 'none';
-        });
-        
-        // Initialize the app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
-    </script>
+      }
+      return null;
+    }
+
+    function updateScores() {
+      scoreXEl.textContent = scores.X;
+      scoreOEl.textContent = scores.O;
+    }
+
+    function restartGame() {
+      cells.forEach(cell => {
+        cell.classList.remove('winner', 'x', 'o');
+        cell.textContent = '';
+      });
+      gameState = Array(9).fill(null);
+      currentPlayer = 'X';
+      statusEl.textContent = "Player X's turn";
+    }
+
+    function resetScore() {
+      scores = { X: 0, O: 0 };
+      updateScores();
+      restartGame();
+    }
+
+    // attach to window for button access
+    window.restartGame = restartGame;
+    window.resetScore = resetScore;
+
+    // start
+    initBoard();
+  </script>
 </body>
 </html>
