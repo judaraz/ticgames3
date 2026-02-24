@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Neon Tic Tac Toe · English</title>
+  <title>Neon Tic Tac Toe · RichAds interstitials</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -140,27 +140,34 @@
       box-shadow: 0 0 8px var(--o-color);
     }
 
-    /* Ad container: both ads stacked with spacing */
+    /* Ad container - only RichAds banner allowed */
     .ad-banner {
       margin-top: 1.5rem;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 1.2rem;
-      min-height: 140px;
-    }
-
-    .ad-banner > * {
-      max-width: 100%;
+      min-height: 100px;
+      background: #0f1222;
       border-radius: 8px;
+      padding: 0.5rem;
     }
 
-    /* small debug/info note (optional, can be removed) */
-    .ad-note {
-      font-size: 0.7rem;
-      opacity: 0.5;
-      margin-top: 0.25rem;
+    #richads-banner {
+      min-width: 320px;
+      min-height: 100px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* any iframe that is not from richads will be nuked — see js */
+    .ad-banner iframe:not([src*="richinfo"]) {
+      display: none !important;
+      visibility: hidden !important;
+      width: 0 !important;
+      height: 0 !important;
     }
   </style>
 </head>
@@ -178,79 +185,160 @@
       <button class="reset" onclick="resetScore()">Reset score</button>
     </div>
 
-    <!-- ========== AD INTEGRATION (RichAds + Adsterra) with persistent retry ========== -->
+    <!-- ===== RICHADS BANNER (only RichAds allowed) ===== -->
     <div class="ad-banner">
-      <!-- RichAds container (always tries to load) -->
-      <div id="richads-container" style="min-width: 320px; min-height: 100px; background: #0b0f1a; display: flex; align-items: center; justify-content: center;"></div>
-      
-      <!-- Adsterra banner (original, unchanged) -->
-      <div>
-        <script type="text/javascript">
-          atOptions = {
-            'key' : '81cfa983e7ca47cc21902cb55674c554',
-            'format' : 'iframe',
-            'height' : 60,
-            'width' : 468,
-            'params' : {}
-          };
-        </script>
-        <script type="text/javascript" src="//www.highperformanceformat.com/81cfa983e7ca47cc21902cb55674c554/invoke.js"></script>
-      </div>
+      <div id="richads-banner"></div>
+      <!-- any other ad script will be removed by the guardian -->
     </div>
-    <!-- optional tiny note (not intrusive) -->
-    <div class="ad-note">▼ ads always retry</div>
   </div>
 
   <!-- RichAds core script (load once) -->
   <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
 
   <script>
-    // --- PERSISTENT RichAds initialisation with retry on failure / adblock ---
-    (function initRichAds(containerId, pubId, appId, maxAttempts = 15) {
-      let attempts = 0;
-      const container = document.getElementById(containerId);
-      if (!container) return;
+    // --------------------------------------------------------------------
+    // 1. RICHADS CONTROLLER — BANNER + INTERSTITIAL (on win/draw)
+    // --------------------------------------------------------------------
+    let richAdsController = null;
+    let bannerReady = false;
 
-      function tryInit() {
-        attempts++;
-        // Check if controller is available and not previously failed fatally
-        if (window.TelegramAdsController && typeof window.TelegramAdsController.initialize === 'function') {
-          try {
-            // Clear container placeholder (optional, but helps if previous partial render)
-            container.innerHTML = ''; 
-            window.TelegramAdsController.initialize({
-              pubId: pubId,
-              appId: appId,
-              containerId: containerId  // ensures it renders inside the div
-            });
-            console.log('✅ RichAds initialized (attempt #' + attempts + ')');
-            return true;
-          } catch (e) {
-            console.warn('⚠️ RichAds init error:', e);
-          }
-        } else {
-          console.warn('⏳ TelegramAdsController not ready (attempt #' + attempts + ')');
-        }
-
-        // If not succeeded and attempts left, retry after delay (exponential backoff)
-        if (attempts < maxAttempts) {
-          const delay = Math.min(1000 * Math.pow(1.5, attempts), 10000); // up to 10s
-          setTimeout(tryInit, delay);
-        } else {
-          console.warn('❗ RichAds max attempts reached — likely blocked or unavailable.');
-          // Optionally show fallback message inside container
-          container.style.background = '#1e2434';
-          container.innerHTML = '<span style="color:#888; font-size:0.9rem;">ad space (retry later)</span>';
-        }
+    function initRichAds() {
+      if (!window.TelegramAdsController) {
+        console.warn('TelegramAdsController not available, retrying...');
+        setTimeout(initRichAds, 500);
+        return;
       }
 
-      // First attempt after a tiny delay to ensure script parsing
-      setTimeout(tryInit, 300);
-    })('richads-container', '956231', '6162', 20);  // increased attempts, retries for long time
-  </script>
+      try {
+        richAdsController = new TelegramAdsController();
+        
+        // Initialize with both banner and interstitial capabilities
+        richAdsController.initialize({
+          pubId: '956231',
+          appId: '6162',
+          containerId: 'richads-banner',   // banner renders here
+          onAdLoaded: () => {
+            console.log('✅ RichAds banner loaded');
+            bannerReady = true;
+          },
+          onAdFailed: (err) => {
+            console.warn('⚠️ RichAds banner failed:', err);
+            bannerReady = false;
+          }
+        });
 
-  <script>
-    // --- Tic Tac Toe Game Logic (all English text) ---
+        // Also preload interstitial (optional, but ready)
+        if (richAdsController.loadInterstitial) {
+          richAdsController.loadInterstitial();
+        }
+
+        console.log('🚀 RichAds initialized (banner + interstitial)');
+      } catch (e) {
+        console.error('RichAds init error:', e);
+        setTimeout(initRichAds, 2000);
+      }
+    }
+
+    // Start richads after a tiny delay
+    setTimeout(initRichAds, 300);
+
+    // --------------------------------------------------------------------
+    // 2. SHOW INTERSTITIAL ON WIN / DRAW
+    // --------------------------------------------------------------------
+    function tryShowInterstitial() {
+      if (!richAdsController) {
+        console.log('Interstitial: controller not ready');
+        return false;
+      }
+
+      // Method names vary: try showInterstitial or showAd or similar
+      if (typeof richAdsController.showInterstitial === 'function') {
+        try {
+          richAdsController.showInterstitial();
+          console.log('📺 Interstitial requested (showInterstitial)');
+          return true;
+        } catch (e) {
+          console.warn('Interstitial error:', e);
+        }
+      } else if (typeof richAdsController.showAd === 'function') {
+        try {
+          richAdsController.showAd({ type: 'interstitial' });
+          console.log('📺 Interstitial requested (showAd)');
+          return true;
+        } catch (e) {
+          console.warn('Interstitial error:', e);
+        }
+      } else {
+        // Fallback: if the controller has a generic method, try to call any push-style
+        if (richAdsController.pushAd) {
+          try { richAdsController.pushAd({ type: 'interstitial' }); } catch (e) {}
+        } else {
+          console.log('No interstitial method available — might be unsupported');
+        }
+      }
+      return false;
+    }
+
+    // --------------------------------------------------------------------
+    // 3. AGGRESSIVELY REMOVE ANY NON-RICHADS AD CONTENT
+    // --------------------------------------------------------------------
+    function nukeNonRichAds() {
+      // Target all iframes inside .ad-banner that don't have richinfo in src
+      const banners = document.querySelectorAll('.ad-banner');
+      banners.forEach(banner => {
+        const iframes = banner.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+          const src = iframe.src || '';
+          if (!src.includes('richinfo') && !src.includes('richads') && !src.includes('telegram')) {
+            console.log('💥 Removing non-RichAds iframe:', src);
+            iframe.remove();
+          }
+        });
+
+        // Also remove any script-generated junk (some ad codes leave divs)
+        const foreignElements = banner.querySelectorAll('div:not(#richads-banner)');
+        foreignElements.forEach(el => {
+          // if it contains an iframe that we already removed, clean up parent
+          if (el.querySelector('iframe') === null && !el.closest('#richads-banner')) {
+            // but be careful not to delete our container
+            if (el.id !== 'richads-banner' && !el.querySelector('#richads-banner')) {
+              // check if it looks like ad leftovers (like ins, etc)
+              if (el.tagName === 'INS' || el.tagName === 'IFRAME' || el.className.includes('ad')) {
+                el.remove();
+              }
+            }
+          }
+        });
+      });
+
+      // Also nuke Adsterra script's iframe if it appears anywhere (it loads in body)
+      document.querySelectorAll('iframe[src*="highperformanceformat"], iframe[src*="adsterra"]').forEach(el => {
+        console.log('🔥 Removing Adsterra iframe (only RichAds allowed)');
+        el.remove();
+      });
+
+      // Remove any Adsterra script tags (they keep reinserting? we can't fully block but clean periodically)
+      document.querySelectorAll('script[src*="highperformanceformat"], script[src*="adsterra"]').forEach(script => {
+        // Be cautious: do not remove our own script, but these are external
+        if (script.src && (script.src.includes('highperformanceformat') || script.src.includes('adsterra'))) {
+          console.log('❌ Removing Adsterra script tag');
+          script.remove();
+        }
+      });
+    }
+
+    // Run nuke immediately and then observe for new insertions
+    nukeNonRichAds();
+
+    // Observe DOM for any new iframes/scripts (adsterra likes to come back)
+    const observer = new MutationObserver(() => {
+      nukeNonRichAds();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // --------------------------------------------------------------------
+    // 4. TIC TAC TOE GAME (english, trigger interstitial on game end)
+    // --------------------------------------------------------------------
     const boardEl = document.getElementById('board');
     const statusEl = document.getElementById('status');
     const scoreXEl = document.getElementById('scoreX');
@@ -289,8 +377,12 @@
         statusEl.textContent = `Player ${winnerSymbol} wins! 🎉`;
         scores[winnerSymbol]++;
         updateScores();
+        // show interstitial on win
+        tryShowInterstitial();
       } else if (!gameState.includes(null)) {
         statusEl.textContent = "It's a draw!";
+        // show interstitial on draw (loss condition for both)
+        tryShowInterstitial();
       } else {
         currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
         statusEl.textContent = `Player ${currentPlayer}'s turn`;
@@ -329,12 +421,13 @@
       restartGame();
     }
 
-    // attach to window for button access
     window.restartGame = restartGame;
     window.resetScore = resetScore;
 
-    // start
     initBoard();
+
+    // additional nuke after game actions (just in case)
+    setInterval(nukeNonRichAds, 2000); // keep cleaning every 2 sec
   </script>
 </body>
 </html>
